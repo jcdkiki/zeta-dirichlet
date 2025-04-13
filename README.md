@@ -4,7 +4,7 @@
 
 * Установить зависимости
 ```sh
-sudo apt install texlive texlive-base
+sudo apt install texlive texlive-base texlive-lang-cyrillic
 ```
 
 * Собрать всё целиком...
