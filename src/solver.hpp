@@ -5,7 +5,7 @@
 #include <flint/acb_mat.h>
 #include "acb_vector.hpp"
 
-void make_full_matrix(acb_mat_t& matrix, slong n, acb_vector& zeros, slong precision);
-void solve_all(acb_mat_t& A, slong n, slong precision);
+void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong precision);
+void solve_all(const acb_vector& zeros, slong max_m, slong precision);
 
 #endif

@@ -1,87 +1,85 @@
 #include "solver.hpp"
 
-void make_full_matrix(acb_mat_t& matrix, slong n, acb_vector& zeros, slong precision) {
-    acb_t base, exp, res;
-    acb_init(base);
-    acb_init(exp);
-    acb_init(res);
+// Функция для заполнения матрицы
+void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong precision) {
+    // Заполнение первых m-1 строк
+    for (slong i = 0; i < m - 1; ++i) {
+        const acb_ptr s = zeros.get_ptr(i);
+        for (slong j = 0; j < m; ++j) {
+            acb_t base, exp, res;
+            acb_init(base);
+            acb_init(exp);
+            acb_init(res);
 
-    if (zeros.get_size() < n - 1) {
-        throw std::runtime_error("Not enough zeros in vector");
-    }
-
-    // Заполняем первые n-1 строк
-    for (slong i = 0; i < n - 1; ++i) {
-        for (slong j = 0; j < n; ++j) {
-            acb_set_d_d(base, j + 1, 0.0);       // base = (j+1) + 0i
-            acb_set(exp, zeros.get_ptr(i));       // exp = zeros[i]
-            acb_neg(exp, exp);
-            acb_pow(res, base, exp, precision);  // res = base^-exp
+            acb_set_d(base, j + 1);  // base = j + 1
+            acb_neg(exp, s);         // exp = -s_i
+            acb_pow(res, base, exp, precision);  // res = (j+1)^(-s_i)
             acb_set(acb_mat_entry(matrix, i, j), res);
+
+            acb_clear(base);
+            acb_clear(exp);
+            acb_clear(res);
         }
     }
 
-    // Последняя строка: [1, 0, ..., 0]
-    for (slong j = 0; j < n; ++j) {
+    // Последняя строка [1, 0, ..., 0]
+    for (slong j = 0; j < m; ++j) {
         if (j == 0) {
-            acb_set_d_d(acb_mat_entry(matrix, n - 1, j), 1.0, 0.0);
+            acb_one(acb_mat_entry(matrix, m - 1, j));
         } else {
-            acb_zero(acb_mat_entry(matrix, n - 1, j));
+            acb_zero(acb_mat_entry(matrix, m - 1, j));
         }
     }
-
-    acb_clear(base);
-    acb_clear(exp);
-    acb_clear(res);
 }
 
-void solve_all(acb_mat_t& A, slong n, slong precision) {
-    slong* perm = (slong*)flint_malloc(sizeof(slong) * n);
-
-    for (slong m = 1; m <= n; ++m) {
-        // Создаем временную матрицу для текущего m
-        acb_mat_t LU;
-        acb_mat_init(LU, m, m);
-        
-        // Копируем подматрицу m x m из исходной матрицы A
-        for (slong i = 0; i < m; ++i) {
-            for (slong j = 0; j < m; ++j) {
-                acb_set(acb_mat_entry(LU, i, j), 
-                       acb_mat_entry(A, i, j));
-            }
-        }
-
-        // LU-разложение для текущего размера m
-        int result = acb_mat_lu(perm, LU, LU, precision);
-
-        if (!result) {
-            flint_printf("System for m=%wd is singular\n", m);
-            acb_mat_clear(LU);
+// Основная функция решения систем
+void solve_all(const acb_vector& zeros, slong max_m, slong precision) {
+    for (slong m = 1; m <= max_m; ++m) {
+        if (m - 1 > zeros.get_size()) {
+            flint_printf("Not enough zeros for m=%wd\n", m);
             continue;
         }
 
-        // Решение системы
-        acb_mat_t b, x;
-        acb_mat_init(b, m, 1);
-        acb_mat_init(x, m, 1);
+        // Инициализация матрицы
+        acb_mat_t matrix;
+        acb_mat_init(matrix, m, m);
+        fill_matrix(matrix, m, zeros, precision);  // Заполняем матрицу
+
+        // LU-разложение
+        slong* perm = (slong*)flint_malloc(sizeof(slong) * m);
+        acb_mat_t LU;
+        acb_mat_init(LU, m, m);
+        acb_mat_set(LU, matrix);
+
+        int result = acb_mat_lu(perm, LU, LU, precision);
+
+        // Подготовка правой части [0, ..., 0, 1]
+        acb_mat_t rhs, sol;
+        acb_mat_init(rhs, m, 1);
+        acb_mat_init(sol, m, 1);
 
         for (slong i = 0; i < m - 1; ++i) {
-            acb_zero(acb_mat_entry(b, i, 0));
+            acb_zero(acb_mat_entry(rhs, i, 0));
         }
-        acb_one(acb_mat_entry(b, m - 1, 0));
+        acb_one(acb_mat_entry(rhs, m - 1, 0));
 
-        acb_mat_solve_lu_precomp(x, perm, LU, b, precision);
+        // Решение системы и вывод
+        if (!result) {
+            flint_printf("System for m=%wd is singular\n", m);
+        } else {
+            acb_mat_solve_lu_precomp(sol, perm, LU, rhs, precision);
+            flint_printf("Solution for m=%wd:\n[", m);
+            for (slong k = 0; k < m; ++k) {
+                acb_printd(acb_mat_entry(sol, k, 0), 10);
+                if (k < m - 1) flint_printf(", ");
+            }
+            flint_printf("]\n\n");
+        }
 
-        // Вывод
-        flint_printf("Solution for m=%wd:\n", m);
-        acb_mat_printd(x, 10);
-        flint_printf("\n");
-
-        // Очистка временных данных
-        acb_mat_clear(b);
-        acb_mat_clear(x);
+        flint_free(perm);
         acb_mat_clear(LU);
+        acb_mat_clear(rhs);
+        acb_mat_clear(sol);
+        acb_mat_clear(matrix);
     }
-
-    flint_free(perm);
 }
