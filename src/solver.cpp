@@ -1,18 +1,17 @@
 #include "solver.hpp"
 
-// Функция для заполнения матрицы
 void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong precision) {
     // Заполнение первых m-1 строк
     for (slong i = 0; i < m - 1; ++i) {
-        const acb_ptr s = zeros.get_ptr(i);
         for (slong j = 0; j < m; ++j) {
             acb_t base, exp, res;
             acb_init(base);
             acb_init(exp);
             acb_init(res);
 
-            acb_set_d(base, j + 1);  // base = j + 1
-            acb_neg(exp, s);         // exp = -s_i
+            acb_set_d_d(base, j + 1, 0.0);  // base = j + 1
+            acb_set(exp, zeros.get_ptr(i));       // exp = zeros[i]
+            acb_neg(exp, exp);         // exp = -s_i
             acb_pow(res, base, exp, precision);  // res = (j+1)^(-s_i)
             acb_set(acb_mat_entry(matrix, i, j), res);
 
@@ -69,11 +68,7 @@ void solve_all(const acb_vector& zeros, slong max_m, slong precision) {
         } else {
             acb_mat_solve_lu_precomp(sol, perm, LU, rhs, precision);
             flint_printf("Solution for m=%wd:\n[", m);
-            for (slong k = 0; k < m; ++k) {
-                acb_printd(acb_mat_entry(sol, k, 0), 3);
-                if (k < m - 1) flint_printf(", ");
-            }
-            flint_printf("]\n\n");
+            acb_mat_printd(sol, 10);
         }
 
         flint_free(perm);
