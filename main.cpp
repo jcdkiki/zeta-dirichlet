@@ -3,8 +3,8 @@
 
 static constexpr int N_PRECISION = 20;
 static constexpr int BYTE_PRECISION = 2048;
-static constexpr int N_ZEROS = 20;
-const std::string path = "/home/ravendexter/Downloads/zeros.val";
+static constexpr int N_ZEROS = 5;
+constexpr char path[] = "/mnt/1DE0B2F616840AF3/downloads/zeros.val";
 
 int main() {
     acb_vector zeros(N_ZEROS);

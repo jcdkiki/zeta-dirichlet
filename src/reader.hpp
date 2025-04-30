@@ -9,7 +9,7 @@
 #include <iostream>
 #include "acb_vector.hpp" 
 
-void read_zeros(acb_vector& zeros, const std::string& filepath, slong n_zeros, slong precision);
+void read_zeros(acb_vector& zeros, const char* filepath, slong n_zeros, slong precision);
 
 void print_zeros(const acb_vector& zeros, slong n_zeros, slong precision);
 

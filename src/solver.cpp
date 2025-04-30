@@ -70,7 +70,7 @@ void solve_all(const acb_vector& zeros, slong max_m, slong precision) {
             acb_mat_solve_lu_precomp(sol, perm, LU, rhs, precision);
             flint_printf("Solution for m=%wd:\n[", m);
             for (slong k = 0; k < m; ++k) {
-                acb_printd(acb_mat_entry(sol, k, 0), 10);
+                acb_printd(acb_mat_entry(sol, k, 0), 3);
                 if (k < m - 1) flint_printf(", ");
             }
             flint_printf("]\n\n");
