@@ -13,6 +13,7 @@ add_executable(zeta
     src/reader.cpp
     src/acb_vector.cpp
     src/solver.cpp
+    src/reader_solutions.cpp
 )
 
 target_link_libraries(zeta

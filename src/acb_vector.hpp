@@ -15,6 +15,8 @@ public:
     acb_vector(const acb_vector&) = delete;
     acb_vector& operator=(const acb_vector&) = delete;
 
+    acb_vector& operator=(acb_vector&& other) noexcept;
+
 public:
     explicit acb_vector(slong capacity) noexcept;
 

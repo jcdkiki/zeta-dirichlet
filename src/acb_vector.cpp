@@ -1,9 +1,9 @@
 #include "acb_vector.hpp"
 
 acb_vector::acb_vector(slong capacity) noexcept 
-    : capacity(capacity * 2), size(capacity * 2) 
+    : capacity(capacity), size(capacity) 
 {
-    data = _acb_vec_init(capacity * 2);
+    data = _acb_vec_init(capacity);
 }
 
 // Конструктор перемещения
@@ -13,6 +13,23 @@ acb_vector::acb_vector(acb_vector&& other) noexcept
     other.data = nullptr;
     other.capacity = 0;
     other.size = 0;
+}
+
+acb_vector& acb_vector::operator=(acb_vector&& other) noexcept {
+    if (this != &other) {
+        if (data != nullptr) {
+            _acb_vec_clear(data, capacity);
+        }
+
+        data = other.data;
+        capacity = other.capacity;
+        size = other.size;
+
+        other.data = nullptr;
+        other.capacity = 0;
+        other.size = 0;
+    }
+    return *this;
 }
 
 // Деструктор
