@@ -6,6 +6,6 @@
 #include "acb_vector.hpp"
 
 void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong precision);
-void solve_all(const acb_vector& zeros, slong max_m, slong precision);
+void solve_all(const acb_vector& zeros, slong max_m, slong precision, const char* filename = nullptr);
 
 #endif

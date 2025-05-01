@@ -17,7 +17,8 @@ int main() {
     }
 
     slong max_m = 2* N_ZEROS + 1;
-    solve_all(zeros, max_m, BYTE_PRECISION);
+    const char* output_file = "solutions.txt";
+    solve_all(zeros, max_m, BYTE_PRECISION, output_file);
 
     return 0;
 }
