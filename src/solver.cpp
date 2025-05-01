@@ -61,13 +61,20 @@ void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong preci
 void solve_all(const acb_vector& zeros, slong max_m, slong precision, const char* output_file) {
     std::vector<std::unique_ptr<AcbMat>> solutions;
     
-    for (slong m = 1; m <= max_m; ++m) {
-        // Исправленное обращение к размеру вектора
-        if (m - 1 > zeros.get_size()) {
-            flint_printf("Not enough zeros for m=%wd\n", m);
-            continue;
-        }
+    if (max_m % 2 == 0) {
+        flint_printf("Error: max_m must be odd (2n+1), got %wd\n", max_m);
+        return;
+    }
 
+    slong num_zeros = zeros.get_size();
+    slong max_valid_m = 2 * num_zeros + 1;
+    
+    if (max_m > max_valid_m) {
+        max_m = max_valid_m;
+        flint_printf("Adjusted max_m to %wd (2*%wd+1)\n", max_m, num_zeros);
+    }
+
+    for (slong m = 1; m <= max_m; m += 2) {
         acb_mat_t matrix, LU, rhs, sol;
         acb_mat_init(matrix, m, m);
         acb_mat_init(LU, m, m);
