@@ -4,10 +4,9 @@ project(zeta)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Путь к FLINT (если он в include проекта)
-include_directories("/usr/include/flint")  # или точный путь к flint
+find_package(PkgConfig)
+pkg_search_module(FLINT REQUIRED flint)
 
-# Добавляем исходные файлы из папки src
 add_executable(zeta
     main.cpp
     src/reader.cpp
@@ -16,9 +15,6 @@ add_executable(zeta
     src/reader_solutions.cpp
 )
 
-target_link_libraries(zeta
-    PRIVATE
-    flint
-    gmp  
-    mpfr
-)
+target_include_directories(zeta PRIVATE ${FLINT_INCLUDE_DIRS})
+target_compile_options(zeta PRIVATE ${FLINT_CFLAGS})
+target_link_libraries(zeta PRIVATE ${FLINT_LIBRARIES})
