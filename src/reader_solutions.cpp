@@ -17,7 +17,7 @@ std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
 
     string line;
     regex m_pattern(R"(Solution for m=(\d+):)");
-    regex entry_pattern(R"(\s*\[\s*\(\s*([^\+-]+)\s*([+-])\s*([^j]+)j\s*\))");
+    regex entry_pattern(R"(\s*\(\s*([^\+-]+)\s*([+-])\s*([^j]+)j\s*\)\s*\+\/-\s*\([^\)]+\))");
 
     int current_m = -1;
     vector<unique_ptr<acb_struct[]>> current_coeffs;

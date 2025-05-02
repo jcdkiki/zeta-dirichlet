@@ -1,6 +1,8 @@
 #include "solver.hpp"
 #include <vector>
 #include <memory>
+#include <iostream>
+#include <stdexcept>
 
 // RAII-обертка для acb_mat_t
 struct AcbMat {
@@ -17,14 +19,51 @@ void save_solutions(const char* filename, const std::vector<std::unique_ptr<AcbM
     
     const slong print_digits = 15;
     
-    for (slong m = 1; m <= max_m; ++m) {
-        if (m-1 >= solutions.size()) break;
+    for (slong m = 1; m <= max_m; m += 2) {  // Только нечётные m
+        if ((m-1)/2 >= solutions.size()) break;
         
-        flint_fprintf(file, "Solution for m=%wd:\n[", m);
-        acb_mat_fprintd(file, solutions[m-1]->mat, print_digits);
-        flint_fprintf(file, "]\n");
+        flint_fprintf(file, "Solution for m=%wd:\n", m);
+        for (slong i = 0; i < m; ++i) {
+            acb_fprintd(file, acb_mat_entry(solutions[(m-1)/2]->mat, i, 0), print_digits);
+            flint_fprintf(file, "\n");
+        }
     }
     fclose(file);
+}
+
+void compute_series(acb_t result, const acb_t s, int m, const std::map<int, acb_vector>& solutions, slong precision) {
+    auto it = solutions.find(m);
+    if (it == solutions.end()) {
+        throw std::runtime_error("compute_series: m not found in solutions");
+    }
+    const acb_vector& coeffs = it->second;
+    slong num_coeffs = coeffs.get_size();
+    if (num_coeffs != m) {
+        throw std::runtime_error("compute_series: number of coefficients does not match m");
+    }
+
+    acb_zero(result);
+
+    acb_t base, exponent, term, pow_result;
+    acb_init(base);
+    acb_init(exponent);
+    acb_init(term);
+    acb_init(pow_result);
+
+    acb_neg(exponent, s); // exponent = -s
+
+    for (slong j = 0; j < num_coeffs; ++j) {
+        slong current_base = j + 1;
+        acb_set_si(base, current_base);
+        acb_pow(pow_result, base, exponent, precision);
+        acb_mul(term, coeffs.get_ptr(j), pow_result, precision);
+        acb_add(result, result, term, precision);
+    }
+
+    acb_clear(base);
+    acb_clear(exponent);
+    acb_clear(term);
+    acb_clear(pow_result);
 }
 
 void fill_matrix(acb_mat_t matrix, slong m, const acb_vector& zeros, slong precision) {
