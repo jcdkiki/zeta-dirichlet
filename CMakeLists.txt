@@ -12,6 +12,7 @@ add_executable(zeta
     src/reader.cpp
     src/acb_vector.cpp
     src/solver.cpp
+    src/reader_solutions.cpp
 )
 
 target_include_directories(zeta PRIVATE ${FLINT_INCLUDE_DIRS})

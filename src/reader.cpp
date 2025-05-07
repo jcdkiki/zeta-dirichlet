@@ -1,7 +1,6 @@
 #include "reader.hpp"
 
-void read_zeros(acb_vector &zeros, const std::string &filepath, slong n_zeros,
-                slong prec)
+void read_zeros(acb_vector& zeros, const char* filepath, slong n_zeros, slong prec) 
 {
     std::ifstream file(filepath);
     if (!file.is_open()) {
