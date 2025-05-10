@@ -8,13 +8,13 @@
 
 using namespace std;
 
-std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
+std::map<int, acb_vector> read_solutions(const char* path, slong precision) 
 {
     map<int, acb_vector> solutions;
-    ifstream file(filename);
+    ifstream file(path);
     if (!file.is_open()) 
     {
-        throw runtime_error("Could not open file: " + string(filename));
+        throw runtime_error("Could not open file: " + string(path));
     }
 
     string line;
