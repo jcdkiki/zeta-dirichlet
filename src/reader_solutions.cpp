@@ -8,10 +8,12 @@
 
 using namespace std;
 
-std::map<int, acb_vector> read_solutions(const char* filename, slong precision) {
+std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
+{
     map<int, acb_vector> solutions;
     ifstream file(filename);
-    if (!file.is_open()) {
+    if (!file.is_open()) 
+    {
         throw runtime_error("Could not open file: " + string(filename));
     }
 
@@ -22,13 +24,16 @@ std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
     int current_m = -1;
     vector<unique_ptr<acb_struct[]>> current_coeffs;
 
-    while (getline(file, line)) {
+    while (getline(file, line)) 
+    {
         smatch match;
-        if (regex_search(line, match, m_pattern)) {
-            if (current_m != -1) {
-                // Save previous coefficients
+        if (regex_search(line, match, m_pattern)) 
+        {
+            if (current_m != -1) 
+            {
                 acb_vector vec(current_coeffs.size());
-                for (size_t i = 0; i < current_coeffs.size(); ++i) {
+                for (size_t i = 0; i < current_coeffs.size(); ++i) 
+                {
                     acb_set(vec.get_ptr(i), current_coeffs[i].get());
                 }
                 solutions.emplace(current_m, std::move(vec));
@@ -36,7 +41,8 @@ std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
             }
             current_m = stoi(match[1]);
         }
-        else if (current_m != -1 && regex_search(line, match, entry_pattern)) {
+        else if (current_m != -1 && regex_search(line, match, entry_pattern)) 
+        {
             string real_str = match[1].str();
             string sign = match[2].str();
             string imag_str = sign + match[3].str();
@@ -54,10 +60,11 @@ std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
         }
     }
 
-    // Save last solution
-    if (current_m != -1 && !current_coeffs.empty()) {
+    if (current_m != -1 && !current_coeffs.empty()) 
+    {
         acb_vector vec(current_coeffs.size());
-        for (size_t i = 0; i < current_coeffs.size(); ++i) {
+        for (size_t i = 0; i < current_coeffs.size(); ++i) 
+        {
             acb_set(vec.get_ptr(i), current_coeffs[i].get());
         }
         solutions.emplace(current_m, std::move(vec));
@@ -66,10 +73,13 @@ std::map<int, acb_vector> read_solutions(const char* filename, slong precision) 
     return solutions;
 }
 
-void print_solutions(const map<int, acb_vector>& solutions) {
-    for (const auto& [m, vec] : solutions) {
+void print_solutions(const map<int, acb_vector>& solutions) 
+{
+    for (const auto& [m, vec] : solutions) 
+    {
         flint_printf("Solution for m=%d:\n", m);
-        for (slong i = 0; i < vec.get_size(); ++i) {
+        for (slong i = 0; i < vec.get_size(); ++i) 
+        {
             acb_printd(vec.get_ptr(i), 15);
             flint_printf("\n");
         }
