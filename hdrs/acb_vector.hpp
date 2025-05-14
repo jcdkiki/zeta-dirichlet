@@ -11,10 +11,11 @@ class acb_vector {
     slong size;
 
   public:
+    acb_vector(const acb_ptr vec, slong size);
     acb_vector(const acb_vector &) = delete;
     acb_vector &operator=(const acb_vector &) = delete;
 
-    acb_vector& operator=(acb_vector&& other) noexcept;
+    acb_vector &operator=(acb_vector&& other) noexcept;
 
 public:
     explicit acb_vector(slong capacity) noexcept;
@@ -27,7 +28,7 @@ public:
 
     void set_size(slong new_size) noexcept;
 
-    acb_ptr operator[](slong i) noexcept;
+    acb_ptr operator[](slong i) const noexcept;
 
     ~acb_vector();
 };

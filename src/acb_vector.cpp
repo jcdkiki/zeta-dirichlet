@@ -1,9 +1,20 @@
-#include "acb_vector.hpp"
+#include "../hdrs/acb_vector.hpp"
 
 acb_vector::acb_vector(slong capacity) noexcept 
     : capacity(capacity), size(capacity) 
 {
     data = _acb_vec_init(capacity);
+}
+
+acb_vector::acb_vector(const acb_ptr vec, slong size)
+{
+    data = _acb_vec_init(size);
+    for (slong i = 0; i < size; ++i)
+    {
+        _acb_vec_set(data, vec, size);
+    }
+    this->capacity = size;
+    this->size = size;
 }
 
 // Конструктор перемещения
@@ -48,7 +59,7 @@ acb_ptr acb_vector::get_ptr(slong i) const
     return data + i;
 }
 
-acb_ptr acb_vector::operator[](slong i) noexcept
+acb_ptr acb_vector::operator[](slong i) const noexcept
 {
     return data + i;
 }

@@ -1,4 +1,4 @@
-#include "reader.hpp"
+#include "../hdrs/reader.hpp"
 
 void read_zeros(acb_vector& zeros, const char* filepath, slong n_zeros, slong prec) 
 {
