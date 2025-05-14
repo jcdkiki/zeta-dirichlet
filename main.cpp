@@ -12,7 +12,7 @@ int main()
 {
     acb_vector zeros(2 * N_ZEROS);
     read_zeros(zeros, PATH, N_ZEROS, BYTE_PRECISION);
-    
+
     if (zeros.get_size() < N_ZEROS) 
     {
         std::cerr << "Error: Not enough zeros loaded" << std::endl;
@@ -32,7 +32,7 @@ int main()
 
         const double s_values[] = {0.5, 1.0, 1.5, 2.0};
 
-        int coefficients_idx = 2 * N_ZEROS; 
+        int coefficients_idx = 2 * N_ZEROS + 1; 
         
         for (double s : s_values) 
         {
