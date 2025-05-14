@@ -1,59 +1,44 @@
-#include "src/reader.hpp"
-#include "src/solver.hpp"
-#include "src/reader_solutions.hpp"
-
-static constexpr int N_PRECISION = 20;
-static constexpr int BYTE_PRECISION = 2048;
-static constexpr int N_ZEROS = 20;
-constexpr char PATH[] = "/mnt/1DE0B2F616840AF3/downloads/zeros.val";
-constexpr char OUTPUT_FILE[] = "solutions.txt";
+#include "hdrs/reader.hpp"
+#include "hdrs/solver.hpp"
+#include "hdrs/utils.hpp"
+#include "hdrs/dirichlet_series.hpp"
+#include <vector>
 
 int main()
 {
     acb_vector zeros(2 * N_ZEROS);
     read_zeros(zeros, PATH, N_ZEROS, BYTE_PRECISION);
     
-    if (zeros.get_size() < N_ZEROS) 
+    std::vector<coefficient> fixed_coeficients = 
     {
-        std::cerr << "Error: Not enough zeros loaded" << std::endl;
-        return 1;
-    }
+        coefficient(0, 1.0, 0.0),
+    };
 
-    const slong system_size = 2 * N_ZEROS + 1;
-    solve_all(zeros, system_size, BYTE_PRECISION, OUTPUT_FILE);
+    slong system_size = 2 * N_ZEROS + fixed_coeficients.size();
 
-    try
-    {   
-        auto solutions = read_solutions(OUTPUT_FILE, BYTE_PRECISION);
-        
-        acb_t s_point, result;
-        acb_init(s_point);
-        acb_init(result);
+    // в res сохраним полученные коэффициенты
+    acb_matrix res(system_size, 1);
+    solve(res, zeros, fixed_coeficients, BYTE_PRECISION);
 
-        const double s_values[] = {0.5, 1.0, 1.5, 2.0};
+    acb_vector coeffs(res(0), system_size);
 
-        int coefficients_idx = 2 * N_ZEROS; 
-        
-        for (double s : s_values) 
-        {
-            arb_set_d(acb_realref(s_point), s);
-            arb_zero(acb_imagref(s_point));
-            
-            compute_series(result, s_point, coefficients_idx, solutions, BYTE_PRECISION);
-            flint_printf("Series at s=%.1f: ", s);
-            arb_printn(acb_realref(result), N_PRECISION, ARB_STR_NO_RADIUS);
-            flint_printf("\n");
-        }
+    // конечный ряд с заданными коэффициентами
+    dirichlet_series series(coeffs);
 
-        acb_clear(s_point);
-        acb_clear(result);
-    }
+    // пример вычисления ряда в точке
+    // можно расскоментировать
+    // acb_t r;
+    // acb_init(r);
 
-    catch (const std::exception& e) 
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
+    // acb_t X;
+    // acb_init(X);
+    // acb_set_d_d(X, 1.0, 0.0);
+    // series.calculate(r, X, BYTE_PRECISION);
+    // acb_printd(r, N_PRECISION);
+    // std::cout<<std::endl;
+
+    // acb_clear(r);
+    // acb_clear(X);
 
     return 0;
 }
