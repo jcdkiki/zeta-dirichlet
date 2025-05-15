@@ -126,6 +126,48 @@ static void backward_substitution(const acb_mat_t U, acb_ptr x, const acb_ptr y,
 void solve(acb_matrix& res, const acb_vector& zeros, std::vector<coefficient>& fixated_coefficients, slong precision)
 {
     slong n_zeros = zeros.get_size();
+
+    slong n_fix_coefs = fixated_coefficients.size();
+
+    slong system_size = n_zeros + n_fix_coefs;
+
+    acb_matrix matrix(system_size, system_size);
+
+    fill_matrix(matrix, fixated_coefficients, zeros, precision);
+
+    acb_matrix b(system_size, 1);
+
+    // первые 2*n нули 
+    for (slong i = 0; i < n_zeros; ++i) 
+    {
+        acb_zero(acb_mat_entry(*b.get_mat(), i, 0));
+    }
+
+    // последние n_fix_coefs фиксированные коэффициенты
+    for (slong i = 0; i < n_fix_coefs; ++i) 
+    {
+        slong row = n_zeros + i;
+        coefficient coef = fixated_coefficients[i];
+        acb_set_d_d(acb_mat_entry(*b.get_mat(), row, 0), coef.re_value, coef.im_value);
+    }
+
+    acb_matrix x(system_size, 1);
+
+    // equation: matrix * x = b
+    // shape: (2n+fix x 2n+fix) * (2n+fix x 1) = (2n+fix x 1)
+    if (!acb_mat_solve(*x.get_mat(), *matrix.get_mat(), *b.get_mat(), precision)) 
+    {
+        printf("Система вырождена или не имеет решения!\n");
+    } 
+    else
+    {
+        res = std::move(x);
+    }
+}
+
+void solve_all(acb_matrix& res, const acb_vector& zeros, std::vector<coefficient>& fixated_coefficients, slong precision)
+{
+    slong n_zeros = zeros.get_size();
     slong n_fix_coefs = fixated_coefficients.size();
     slong system_size = n_zeros + n_fix_coefs;
 
