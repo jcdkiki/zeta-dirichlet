@@ -18,7 +18,8 @@ int main()
 
     // в res сохраним полученные коэффициенты
     acb_matrix res(system_size, 1);
-    solve(res, zeros, fixed_coeficients, BYTE_PRECISION);
+    
+    solve_all(res, zeros, fixed_coeficients, BYTE_PRECISION);
 
     acb_vector coeffs(res(0), system_size);
 

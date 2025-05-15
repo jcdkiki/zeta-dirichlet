@@ -65,7 +65,7 @@ std::map<int, acb_vector> read_solutions(const char* path, slong precision)
         acb_vector vec(current_coeffs.size());
         for (size_t i = 0; i < current_coeffs.size(); ++i) 
         {
-            acb_set(vec.get_ptr(i), current_coeffs[i].get());
+            acb_set(vec[i], current_coeffs[i].get());
         }
         solutions.emplace(current_m, std::move(vec));
     }
@@ -80,7 +80,7 @@ void print_solutions(const map<int, acb_vector>& solutions)
         flint_printf("Solution for m=%d:\n", m);
         for (slong i = 0; i < vec.get_size(); ++i) 
         {
-            acb_printd(vec.get_ptr(i), 15);
+            acb_printd(vec[i], 15);
             flint_printf("\n");
         }
         flint_printf("\n");
