@@ -1,80 +1,68 @@
-#include "../hdrs/acb_vector.hpp"
+#include "acb_vector.hpp"
 
-acb_vector::acb_vector(slong capacity) noexcept 
-    : capacity(capacity), size(capacity) 
-{
-    data = _acb_vec_init(capacity);
-}
-
-acb_vector::acb_vector(const acb_ptr vec, slong size)
-{
-    data = _acb_vec_init(size);
-    for (slong i = 0; i < size; ++i)
+namespace acb {
+    Vector::Vector(slong _size) noexcept : _size(_size) 
     {
-        _acb_vec_set(data, vec, size);
+        _data = (_size == 0) ? nullptr : _acb_vec_init(_size);
     }
-    this->capacity = size;
-    this->size = size;
-}
 
-// Конструктор перемещения
-acb_vector::acb_vector(acb_vector &&other) noexcept
-    : data(other.data), capacity(other.capacity), size(other.size)
-{
-    other.data = nullptr;
-    other.capacity = 0;
-    other.size = 0;
-}
+    Vector::Vector(const acb_ptr _data, slong _size)
+    {
+        this->_data = _acb_vec_init(_size);
+        this->_size = _size;
+        _acb_vec_set(this->_data, _data, _size);
+    }
 
-acb_vector& acb_vector::operator=(acb_vector&& other) noexcept {
-    if (this != &other) {
-        if (data != nullptr) {
-            _acb_vec_clear(data, capacity);
+    Vector::Vector(Vector &&other) noexcept
+        : _data(other._data), _size(other._size)
+    {
+        other._data = nullptr;
+        other._size = 0;
+    }
+
+    Vector &Vector::operator=(const Vector &other)
+    {
+        if (this != &other) {
+            if (_data != nullptr) {
+                _acb_vec_clear(_data, _size);
+            }
+            
+            _data = _acb_vec_init(other._size);
+            _size = other._size;
+            _acb_vec_set(_data, other._data, _size);
         }
 
-        data = other.data;
-        capacity = other.capacity;
-        size = other.size;
-
-        other.data = nullptr;
-        other.capacity = 0;
-        other.size = 0;
+        return *this;
     }
-    return *this;
-}
 
-// Деструктор
-acb_vector::~acb_vector()
-{
-    if (data != nullptr) {
-        _acb_vec_clear(data, capacity);
+    Vector::Vector(const Vector &other)
+    {
+        _data = _acb_vec_init(other._size);
+        _size = other._size;
+        _acb_vec_set(_data, other._data, _size);
     }
-}
 
-acb_ptr acb_vector::get_ptr(slong i) const
-{
-    if (i < 0 || i >= size) {
-        throw std::out_of_range("acb_vector: index out of range");
+
+    Vector& Vector::operator=(Vector&& other) noexcept {
+        if (this != &other) {
+            if (_data != nullptr) {
+                _acb_vec_clear(_data, _size);
+            }
+
+            _data = other._data;
+            _size = other._size;
+
+            other._data = nullptr;
+            other._size = 0;
+        }
+
+        return *this;
     }
-    return data + i;
-}
 
-acb_ptr acb_vector::operator[](slong i) const noexcept
-{
-    return data + i;
-}
-
-slong acb_vector::get_size() const noexcept
-{
-    return size;
-}
-
-void acb_vector::set_size(slong new_size) noexcept
-{
-    if (new_size <= capacity) {
-        size = new_size;
-    }
-    else {
-        size = capacity;
+    Vector::~Vector()
+    {
+        if (_data != nullptr) {
+            _acb_vec_clear(_data, _size);
+        }
     }
 }

@@ -1,4 +1,4 @@
-#include "../hdrs/acb_matrix.hpp"
+#include "acb_matrix.hpp"
 
 acb_matrix::acb_matrix(slong r, slong c)
     : rows(r), cols(c)

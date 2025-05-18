@@ -7,15 +7,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(PkgConfig)
 pkg_search_module(FLINT REQUIRED flint)
 
-find_package(wxWidgets REQUIRED)
+find_package(OpenGL REQUIRED)
+set(OpenGL_GL_PREFERENCE LEGACY)
+
+find_package(wxWidgets COMPONENTS core base gl REQUIRED)
 include(${wxWidgets_USE_FILE})
 
-file(GLOB_RECURSE ZETA_SRC "src/*.cpp")
-add_executable(zeta ${ZETA_SRC})
+add_executable(zeta 
+    src/acb_matrix.cpp
+    src/acb_vector.cpp
+    src/dirichlet_series.cpp
+    src/main.cpp
+    src/plot_panel.cpp
+    src/reader_solutions.cpp
+    src/reader.cpp
+    src/solver.cpp
+    src/zeta_app.cpp
+    src/zeta_frame.cpp
+)
+
+target_include_directories(zeta PRIVATE include)
 
 target_include_directories(zeta PRIVATE ${FLINT_INCLUDE_DIRS} ${wxWidgets_INCLUDE_DIRS})
 target_compile_options(zeta PRIVATE ${FLINT_CFLAGS} ${wxWidgets_CXX_FLAGS})
-target_link_libraries(zeta PRIVATE ${FLINT_LIBRARIES} ${wxWidgets_LIBRARIES})
+target_link_libraries(zeta PRIVATE ${FLINT_LIBRARIES} ${wxWidgets_LIBRARIES} GL)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug" OR CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(zeta PRIVATE -fsanitize=address)
