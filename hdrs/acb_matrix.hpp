@@ -31,4 +31,6 @@ public:
     const acb_ptr operator()(slong row) const;
 };
 
+void print_matrix(acb_matrix matrix, slong matrix_size);
+
 #endif

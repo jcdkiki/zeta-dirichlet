@@ -13,6 +13,7 @@ int main()
     std::vector<coefficient> fixed_coeficients = 
     {
         coefficient(0, 1.0, 0.0),
+        coefficient(1, -1.0, 0.0),
     };
 
     slong system_size = zeros.get_size() + fixed_coeficients.size();
@@ -20,16 +21,14 @@ int main()
     // solve(res, zeros, fixed_coeficients, BYTE_PRECISION);
 
     NestedSystemsSolver ns_solver(fixed_coeficients, zeros);
-    
+
     ns_solver.solve_all_nested();
+    auto sols = ns_solver.get_coefs_vector(50);
 
-    acb_vector coeffs = ns_solver.get_coefs_vector(49);
-    std::cout << coeffs.get_size() << std::endl;
-
-    for (int i = 0; i < coeffs.get_size(); ++i)
+    for (int i = 0; i < sols.get_size(); ++i)
     {
-        acb_printd(coeffs[i], N_PRECISION);
-        std::cout<<std::endl;
+        acb_printd(sols[i], N_PRECISION);
+        std::cout << std::endl;
     }
 
     // конечный ряд с заданными коэффициентами
