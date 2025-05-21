@@ -1,9 +1,9 @@
 #include "../hdrs/dirichlet_series.hpp"
 #include "../hdrs/utils.hpp"
 
-dirichlet_series::dirichlet_series(acb_vector& series_coefs): coefficients(std::move(series_coefs)){}
+DirichletSeries::DirichletSeries(acb_vector& series_coefs): coefficients(std::move(series_coefs)){}
 
-void dirichlet_series::calculate(acb_t result, acb_t X, slong precision)
+void DirichletSeries::calculate(acb_t result, acb_t X, slong precision)
 {
     acb_zero(result);
 

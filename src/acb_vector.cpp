@@ -8,7 +8,7 @@ acb_vector::acb_vector(slong capacity) noexcept
 
 acb_vector::acb_vector(const acb_ptr vec, slong size)
 {
-    data = _acb_vec_init(size);
+    this->data = _acb_vec_init(size);
     for (slong i = 0; i < size; ++i)
     {
         _acb_vec_set(data, vec, size);
@@ -17,7 +17,18 @@ acb_vector::acb_vector(const acb_ptr vec, slong size)
     this->size = size;
 }
 
-// Конструктор перемещения
+acb_vector::acb_vector(const acb_vector & other)
+{
+    this->capacity = other.capacity;
+    this->size = other.size;
+    this->data = _acb_vec_init(other.capacity);
+
+    for (slong i = 0; i < size; ++i)
+    {
+        _acb_vec_set(data, other.data, size);
+    }
+}
+
 acb_vector::acb_vector(acb_vector &&other) noexcept
     : data(other.data), capacity(other.capacity), size(other.size)
 {
@@ -43,7 +54,6 @@ acb_vector& acb_vector::operator=(acb_vector&& other) noexcept {
     return *this;
 }
 
-// Деструктор
 acb_vector::~acb_vector()
 {
     if (data != nullptr) {

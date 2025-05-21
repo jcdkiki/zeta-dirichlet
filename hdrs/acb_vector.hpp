@@ -12,7 +12,7 @@ class acb_vector {
 
   public:
     acb_vector(const acb_ptr vec, slong size);
-    acb_vector(const acb_vector &) = delete;
+    acb_vector(const acb_vector &);
     acb_vector &operator=(const acb_vector &) = delete;
 
     acb_vector &operator=(acb_vector&& other) noexcept;

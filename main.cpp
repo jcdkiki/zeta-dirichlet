@@ -2,6 +2,7 @@
 #include "hdrs/solver.hpp"
 #include "hdrs/utils.hpp"
 #include "hdrs/dirichlet_series.hpp"
+#include "hdrs/nested_systems_solver.hpp"
 #include <vector>
 
 int main()
@@ -14,18 +15,25 @@ int main()
         coefficient(0, 1.0, 0.0),
     };
 
-    slong system_size = 2 * N_ZEROS + fixed_coeficients.size();
+    slong system_size = zeros.get_size() + fixed_coeficients.size();
+    // acb_matrix res(system_size, 1);
+    // solve(res, zeros, fixed_coeficients, BYTE_PRECISION);
 
-    // в res сохраним полученные коэффициенты
-    acb_matrix res(system_size, 1);
+    NestedSystemsSolver ns_solver(fixed_coeficients, zeros);
     
-    solve_all(res, zeros, fixed_coeficients, BYTE_PRECISION);
+    ns_solver.solve_all_nested();
 
-    acb_vector coeffs(res(0), system_size);
+    acb_vector coeffs = ns_solver.get_coefs_vector(49);
+    std::cout << coeffs.get_size() << std::endl;
+
+    for (int i = 0; i < coeffs.get_size(); ++i)
+    {
+        acb_printd(coeffs[i], N_PRECISION);
+        std::cout<<std::endl;
+    }
 
     // конечный ряд с заданными коэффициентами
-    dirichlet_series series(coeffs);
-
+    // DirichletSeries series(ns_solver.get_coefs_vector(0));
     // пример вычисления ряда в точке
     // можно расскоментировать
     // acb_t r;

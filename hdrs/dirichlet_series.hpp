@@ -3,12 +3,12 @@
 
 #include "acb_vector.hpp"
 
-class dirichlet_series
+class DirichletSeries
 {
 private:
     acb_vector coefficients;
 public:
-    dirichlet_series(acb_vector& series_coefs);
+    DirichletSeries(acb_vector& series_coefs);
 
     void calculate(acb_t result, acb_t X, slong precision);
 };

@@ -19,7 +19,7 @@ target_include_directories(zeta PRIVATE ${FLINT_INCLUDE_DIRS})
 target_compile_options(zeta PRIVATE ${FLINT_CFLAGS})
 target_link_libraries(zeta PRIVATE ${FLINT_LIBRARIES})
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug" OR CMAKE_BUILD_TYPE MATCHES "Release")
+if(CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(zeta PRIVATE -fsanitize=address)
     target_link_options(zeta PRIVATE -fsanitize=address)
 endif()
