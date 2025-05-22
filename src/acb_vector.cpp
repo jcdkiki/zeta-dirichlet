@@ -1,106 +1,84 @@
-#include "../hdrs/acb_vector.hpp"
-#include "../hdrs/utils.hpp"
+#include "acb_vector.hpp"
+#include "common.hpp"
 
-acb_vector::acb_vector(slong capacity) noexcept 
-    : capacity(capacity), size(capacity) 
-{
-    data = _acb_vec_init(capacity);
-}
+// TODO: hmmmmmm
+static constexpr int BYTE_PRECISION = 2048;
 
-acb_vector::acb_vector(const acb_ptr vec, slong size)
-{
-    this->data = _acb_vec_init(size);
-    for (slong i = 0; i < size; ++i)
+namespace acb {
+    Vector::Vector(slong _size) noexcept : _size(_size) 
     {
-        _acb_vec_set(data, vec, size);
+        _data = (_size == 0) ? nullptr : _acb_vec_init(_size);
     }
-    this->capacity = size;
-    this->size = size;
-}
 
-acb_vector::acb_vector(const acb_vector & other)
-{
-    this->capacity = other.capacity;
-    this->size = other.size;
-    this->data = _acb_vec_init(other.capacity);
-
-    for (slong i = 0; i < size; ++i)
+    Vector::Vector(const acb_ptr _data, slong _size)
     {
-        _acb_vec_set(data, other.data, size);
+        this->_data = _acb_vec_init(_size);
+        this->_size = _size;
+        _acb_vec_set(this->_data, _data, _size);
     }
-}
 
-acb_vector::acb_vector(acb_vector &&other) noexcept
-    : data(other.data), capacity(other.capacity), size(other.size)
-{
-    other.data = nullptr;
-    other.capacity = 0;
-    other.size = 0;
-}
+    Vector::Vector(Vector &&other) noexcept
+        : _data(other._data), _size(other._size)
+    {
+        other._data = nullptr;
+        other._size = 0;
+    }
 
-acb_vector& acb_vector::operator=(acb_vector&& other) noexcept {
-    if (this != &other) {
-        if (data != nullptr) {
-            _acb_vec_clear(data, capacity);
+    Vector &Vector::operator=(const Vector &other)
+    {
+        if (this != &other) {
+            if (_data != nullptr) {
+                _acb_vec_clear(_data, _size);
+            }
+            
+            _data = _acb_vec_init(other._size);
+            _size = other._size;
+            _acb_vec_set(_data, other._data, _size);
         }
 
-        data = other.data;
-        capacity = other.capacity;
-        size = other.size;
-
-        other.data = nullptr;
-        other.capacity = 0;
-        other.size = 0;
+        return *this;
     }
-    return *this;
-}
 
-acb_vector::~acb_vector()
-{
-    if (data != nullptr) {
-        _acb_vec_clear(data, capacity);
-    }
-}
-
-acb_ptr acb_vector::get_ptr(slong i) const
-{
-    if (i < 0 || i >= size) {
-        throw std::out_of_range("acb_vector: index out of range");
-    }
-    return data + i;
-}
-
-acb_ptr acb_vector::operator[](slong i) const noexcept
-{
-    return data + i;
-}
-
-slong acb_vector::get_size() const noexcept
-{
-    return size;
-}
-
-void acb_vector::set_size(slong new_size) noexcept
-{
-    if (new_size <= capacity) {
-        size = new_size;
-    }
-    else {
-        size = capacity;
-    }
-}
-
-
-void dot_product(acb_t res, const acb_vector &v1, const acb_vector &v2) 
-{
-    if (v1.get_size() != v2.get_size()) 
+    Vector::Vector(const Vector &other)
     {
-        throw std::invalid_argument("Vectors must be of the same size");
+        _data = _acb_vec_init(other._size);
+        _size = other._size;
+        _acb_vec_set(_data, other._data, _size);
+    }
+
+
+    Vector& Vector::operator=(Vector&& other) noexcept {
+        if (this != &other) {
+            if (_data != nullptr) {
+                _acb_vec_clear(_data, _size);
+            }
+
+            _data = other._data;
+            _size = other._size;
+
+            other._data = nullptr;
+            other._size = 0;
+        }
+
+        return *this;
+    }
+
+    Vector::~Vector()
+    {
+        if (_data != nullptr) {
+            _acb_vec_clear(_data, _size);
+        }
+    }
+}
+
+void dot_product(acb_t res, const acb::Vector &v1, const acb::Vector &v2) 
+{
+    if (v1.size() != v2.size()) {
+        throw ZetaException("Vectors must be of the same size");
     }
 
     acb_zero(res);
-    for (slong i = 0; i < v1.get_size(); i++)
-    {
+    for (slong i = 0; i < v1.size(); i++) {
         acb_t temp;
         acb_init(temp);
         acb_mul(temp, v1[i], v2[i], BYTE_PRECISION);  
@@ -109,7 +87,7 @@ void dot_product(acb_t res, const acb_vector &v1, const acb_vector &v2)
     }
 }
 
-void vector_norm(acb_t norm, const acb_vector &v) 
+void vector_norm(acb_t norm, const acb::Vector &v) 
 {
     acb_t dot;
     acb_init(dot);
@@ -120,56 +98,27 @@ void vector_norm(acb_t norm, const acb_vector &v)
     acb_clear(dot);
 }
 
-acb_vector subtract_vectors(const acb_vector &v1, const acb_vector &v2) 
+acb::Vector subtract_vectors(const acb::Vector &v1, const acb::Vector &v2) 
 {
-    if (v1.get_size() != v2.get_size()) 
-    {
-        throw std::invalid_argument("Vectors must be of the same size");
+    if (v1.size() != v2.size()) {
+        throw ZetaException("Vectors must be of the same size");
     }
 
-    acb_vector result(v1.get_size());
+    acb::Vector result(v1.size());
 
-    for (slong i = 0; i < v1.get_size(); i++) 
-    {
+    for (slong i = 0; i < v1.size(); i++) {
         acb_sub(result[i], v1[i], v2[i], BYTE_PRECISION);
     }
 
     return result;
 }
 
-acb_vector scalar_multiply(const acb_vector &v, const acb_t &scalar) 
+acb::Vector scalar_multiply(const acb::Vector &v, const acb_t &scalar) 
 {
-    acb_vector result(v.get_size());
+    acb::Vector result(v.size());
 
-    for (slong i = 0; i < v.get_size(); i++)
-    {
+    for (slong i = 0; i < v.size(); i++) {
         acb_mul(result[i], v[i], scalar, BYTE_PRECISION);
-    }
-
-    return result;
-}
-
-acb_vector matrix_vector_multiply(const acb_matrix &M, const acb_vector &v) {
-    if (M.col_count() != v.get_size()) {
-        throw std::invalid_argument("Matrix columns must match vector size");
-    }
-
-    acb_vector result(M.row_count());
-
-    for (slong i = 0; i < M.row_count(); i++) {
-        acb_t dot;
-        acb_init(dot);
-
-        for (slong j = 0; j < M.col_count(); j++) {
-            acb_t temp;
-            acb_init(temp);
-            acb_mul(temp, acb_mat_entry(*M.get_mat(), i, j), v[j], 64);
-            acb_add(dot, dot, temp, 64);
-            acb_clear(temp);
-        }
-
-        acb_set(result[i], dot);
-        acb_clear(dot);
     }
 
     return result;

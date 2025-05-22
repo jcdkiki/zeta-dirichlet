@@ -1,13 +1,13 @@
-#include "../hdrs/solver.hpp"
-#include "../hdrs/acb_matrix.hpp"
+#include "solver.hpp"
+#include "acb_matrix.hpp"
+#include "common.hpp"
 #include <vector>
 #include <memory>
-#include <iostream>
-#include <stdexcept>
-#include <flint/perm.h>
 
-void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_matrix>>& solutions, slong max_m) 
+void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_matrix>>& solutions, slong max_m, slong precision) 
 { 
+    // TODO: throw exception on error
+
     FILE* file = fopen(filename, "w");
     if (!file) return;
     
@@ -19,26 +19,23 @@ void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_
 
         for (slong i = 0; i < m; ++i) 
         {
-            acb_fprintd(file, acb_mat_entry(*solutions[(m-1)/2]->get_mat(), i, 0), N_PRECISION);
+            acb_fprintd(file, acb_mat_entry(*solutions[(m-1)/2]->get_mat(), i, 0), precision);
             flint_fprintf(file, "\n");
         }
     }
     fclose(file);
 }
 
-void fill_matrix(acb_matrix& matrix, const std::vector<coefficient>& fixed_coefficients, const acb_vector& zeros, slong precision) 
+void fill_matrix(acb_matrix& matrix, const std::vector<coefficient>& fixed_coefficients, const acb::Vector &zeros, slong precision) 
 {
     acb_t base, exp, res;
     acb_init(base);
     acb_init(exp);
     acb_init(res);
 
-    slong n_zeros = zeros.get_size();
-
+    slong n_zeros = zeros.size();
     slong n_fix_coefs = fixed_coefficients.size();
-
     slong system_size = n_zeros + n_fix_coefs;
-
 
     for (slong i = 0; i < system_size; ++i) {
         for (slong j = 0; j < system_size; ++j) {
@@ -50,7 +47,7 @@ void fill_matrix(acb_matrix& matrix, const std::vector<coefficient>& fixed_coeff
     for (slong i = 0; i < n_zeros; ++i) {
         for (slong j = 0; j < system_size; ++j) {
             acb_set_d_d(base, j + 1, 0.0);       // base = (j+1) + 0i
-            acb_set(exp, zeros.get_ptr(i));       // exp = zeros[i]
+            acb_set(exp, zeros[i]);       // exp = zeros[i]
             acb_neg(exp, exp);
             acb_pow(res, base, exp, precision);  // res = base^-exp
             acb_set(acb_mat_entry(*matrix.get_mat(), i, j), res);
@@ -88,7 +85,7 @@ void fill_rhs(acb_matrix& rhs, const std::vector<coefficient>& fixed_coefficient
     }
 }
 
-void fill_rhs(acb_vector& rhs, const std::vector<coefficient>& fixed_coefficients, slong size)
+void fill_rhs(acb::Vector& rhs, const std::vector<coefficient>& fixed_coefficients, slong size)
 {
     slong n_fixed_coeffs = fixed_coefficients.size();
     slong n_zeros = size - n_fixed_coeffs;
@@ -135,7 +132,7 @@ void lu_decomposition(acb_matrix& mat, slong n, slong precision)
     acb_clear(tmp);
 }
 
-void forward_substitution(const acb_matrix& L, acb_vector& y, const acb_vector& b, slong n, slong precision) 
+void forward_substitution(const acb_matrix& L, acb::Vector& y, const acb::Vector& b, slong n, slong precision) 
 {
     for (slong i = 0; i < n; ++i) 
     {
@@ -149,7 +146,7 @@ void forward_substitution(const acb_matrix& L, acb_vector& y, const acb_vector& 
     }
 }
 
-void backward_substitution(const acb_matrix& U, acb_vector& x, const acb_vector& y, slong n, slong precision) 
+void backward_substitution(const acb_matrix& U, acb::Vector& x, const acb::Vector& y, slong n, slong precision) 
 {
     for (slong i = n - 1; i >= 0; --i) 
     {
@@ -166,16 +163,13 @@ void backward_substitution(const acb_matrix& U, acb_vector& x, const acb_vector&
     }
 }
 
-void solve(acb_matrix& res, const acb_vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision)
+void solve(acb_matrix& res, const acb::Vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision)
 {
-    slong n_zeros = zeros.get_size();
-
+    slong n_zeros = zeros.size();
     slong n_fix_coefs = fixed_coefficients.size();
-
     slong system_size = n_zeros + n_fix_coefs;
-
+    
     acb_matrix matrix(system_size, system_size);
-
     fill_matrix(matrix, fixed_coefficients, zeros, precision);
 
     acb_matrix b(system_size, 1);
@@ -186,39 +180,36 @@ void solve(acb_matrix& res, const acb_vector& zeros, const std::vector<coefficie
 
     // equation: matrix * x = b
     // shape: (2n+fix x 2n+fix) * (2n+fix x 1) = (2n+fix x 1)
-    if (!acb_mat_approx_solve(*x.get_mat(), *matrix.get_mat(), *b.get_mat(), precision)) 
-    {
-        std::cout << "Система не имеет решений" << std::endl;
+    if (!acb_mat_approx_solve(*x.get_mat(), *matrix.get_mat(), *b.get_mat(), precision))  {
+        throw ZetaException("No solutions found");
     }
-    else
-    {
+    else {
         res = std::move(x);
     }
 }
 
-void solve_all(acb_matrix& res, const acb_vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision)
+void solve_all(acb_matrix& res, const acb::Vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision)
 {
-    slong n_zeros = zeros.get_size();
+    slong n_zeros = zeros.size();
     slong n_fix_coefs = fixed_coefficients.size();
     slong system_size = n_zeros + n_fix_coefs;
 
     acb_matrix matrix(system_size, system_size);
     fill_matrix(matrix, fixed_coefficients, zeros, precision);
 
-    acb_vector b(system_size);
+    acb::Vector b(system_size);
 
     fill_rhs(b, fixed_coefficients, system_size);
 
     lu_decomposition(matrix, system_size, precision);
 
-    acb_vector y(system_size);
-    acb_vector x(system_size);
+    acb::Vector y(system_size);
+    acb::Vector x(system_size);
 
     forward_substitution(matrix, y, b, system_size, precision);
     backward_substitution(matrix, x, y, system_size, precision);
 
-    for (slong i = 0; i < system_size; ++i) 
-    {
+    for (slong i = 0; i < system_size; ++i) {
         acb_set(acb_mat_entry(*res.get_mat(), i, 0), x[i]);
     }
 }

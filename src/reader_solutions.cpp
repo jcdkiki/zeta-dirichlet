@@ -1,4 +1,5 @@
-#include "../hdrs/reader_solutions.hpp"
+#include "reader_solutions.hpp"
+#include "acb_vector.hpp"
 #include <fstream>
 #include <regex>
 #include <vector>
@@ -8,12 +9,11 @@
 
 using namespace std;
 
-std::map<int, acb_vector> read_solutions(const char* path, slong precision) 
+std::map<int, acb::Vector> read_solutions(const char *path, slong precision) 
 {
-    map<int, acb_vector> solutions;
+    map<int, acb::Vector> solutions;
     ifstream file(path);
-    if (!file.is_open()) 
-    {
+    if (!file.is_open()) {
         throw runtime_error("Could not open file: " + string(path));
     }
 
@@ -31,10 +31,10 @@ std::map<int, acb_vector> read_solutions(const char* path, slong precision)
         {
             if (current_m != -1) 
             {
-                acb_vector vec(current_coeffs.size());
+                acb::Vector vec(current_coeffs.size());
                 for (size_t i = 0; i < current_coeffs.size(); ++i) 
                 {
-                    acb_set(vec.get_ptr(i), current_coeffs[i].get());
+                    acb_set(vec[i], current_coeffs[i].get());
                 }
                 solutions.emplace(current_m, std::move(vec));
                 current_coeffs.clear();
@@ -62,7 +62,7 @@ std::map<int, acb_vector> read_solutions(const char* path, slong precision)
 
     if (current_m != -1 && !current_coeffs.empty()) 
     {
-        acb_vector vec(current_coeffs.size());
+        acb::Vector vec(current_coeffs.size());
         for (size_t i = 0; i < current_coeffs.size(); ++i) 
         {
             acb_set(vec[i], current_coeffs[i].get());
@@ -73,12 +73,12 @@ std::map<int, acb_vector> read_solutions(const char* path, slong precision)
     return solutions;
 }
 
-void print_solutions(const map<int, acb_vector>& solutions) 
+void print_solutions(const map<int, acb::Vector> &solutions) 
 {
     for (const auto& [m, vec] : solutions) 
     {
         flint_printf("Solution for m=%d:\n", m);
-        for (slong i = 0; i < vec.get_size(); ++i) 
+        for (slong i = 0; i < vec.size(); ++i) 
         {
             acb_printd(vec[i], 15);
             flint_printf("\n");

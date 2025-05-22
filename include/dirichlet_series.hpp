@@ -6,9 +6,9 @@
 class DirichletSeries
 {
 private:
-    acb_vector coefficients;
+    acb::Vector coefficients;
 public:
-    DirichletSeries(acb_vector& series_coefs);
+    DirichletSeries(acb::Vector& series_coefs);
 
     void calculate(acb_t result, acb_t X, slong precision);
 };
