@@ -13,17 +13,12 @@ int main()
     std::vector<coefficient> fixed_coeficients = 
     {
         coefficient(0, 1.0, 0.0),
-        coefficient(1, -1.0, 0.0),
     };
-
-    slong system_size = zeros.get_size() + fixed_coeficients.size();
-    // acb_matrix res(system_size, 1);
-    // solve(res, zeros, fixed_coeficients, BYTE_PRECISION);
 
     NestedSystemsSolver ns_solver(fixed_coeficients, zeros);
 
-    ns_solver.solve_all_nested();
-    auto sols = ns_solver.get_coefs_vector(50);
+    ns_solver.qr_solve_all();
+    auto sols = ns_solver.get_coefs_vector(3    );
 
     for (int i = 0; i < sols.get_size(); ++i)
     {

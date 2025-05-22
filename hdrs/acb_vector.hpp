@@ -3,6 +3,7 @@
 
 #include <flint/acb.h>
 #include <stdexcept>
+#include "acb_matrix.hpp"
 
 class acb_vector {
   private:
@@ -32,5 +33,11 @@ public:
 
     ~acb_vector();
 };
+
+void dot_product(acb_t res, const acb_vector &v1, const acb_vector &v2);
+void vector_norm(acb_t norm, const acb_vector &v);
+acb_vector subtract_vectors(const acb_vector &v1, const acb_vector &v2);
+acb_vector scalar_multiply(const acb_vector &v, const acb_t &scalar);
+acb_vector matrix_vector_multiply(const acb_matrix &M, const acb_vector &v);
 
 #endif

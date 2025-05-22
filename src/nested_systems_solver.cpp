@@ -2,12 +2,15 @@
 #include <flint/arb.h>
 #include <flint/fmpq.h>
 #include <limits>
+#include <thread>
+#include <future>
 #include <iostream>
 
 NestedSystemsSolver::NestedSystemsSolver(std::vector<coefficient>& fixed_coefs, acb_vector& zeta_zeros, slong precision)
     : zeros(zeta_zeros), fixed_coefficients(fixed_coefs), precision(precision), matrix(max_system_size, max_system_size), rhs(max_system_size, 1) {}
 
-acb_vector& NestedSystemsSolver::get_coefs_vector(int idx) {
+acb_vector& NestedSystemsSolver::get_coefs_vector(int idx) 
+{
     return solutions[idx];
 }
 
@@ -71,7 +74,7 @@ void NestedSystemsSolver::fill_rhs()
     }
 }
 
-void NestedSystemsSolver::solve_all_nested()
+void NestedSystemsSolver::lu_solve_all()
 {
     fill_matrix();
     fill_rhs();
@@ -263,5 +266,170 @@ void NestedSystemsSolver::solve_all_nested()
         acb_clear(s);
         arb_clear(pivot);
         acb_clear(swapping_buffer);
+    }
+}
+
+void NestedSystemsSolver::modified_gram_schmidt(acb_matrix &Q, acb_matrix &R, const acb_matrix &A) 
+{
+    slong n = A.row_count();
+    
+    if (A.col_count() != n) 
+    {
+        throw std::invalid_argument("Matrix must be square");
+    }
+
+    for (slong j = 0; j < n; j++) 
+    {
+        acb_vector v(n);
+        
+        for (slong i = 0; i < n; i++) 
+        {
+            acb_set(v[i], acb_mat_entry(*A.get_mat(), i, j));
+        }
+
+        for (slong i = 0; i < j; i++) 
+        {
+            acb_t dot;
+            acb_init(dot);
+
+            acb_vector qi(n);
+            for (slong k = 0; k < n; k++) 
+            {
+                acb_set(qi[k], acb_mat_entry(*Q.get_mat(), k, i));
+            }
+
+            dot_product(dot, qi, v);
+            acb_set(acb_mat_entry(*R.get_mat(), i, j), dot);
+
+            acb_vector scaled_qi = scalar_multiply(qi, dot);
+            v = subtract_vectors(v, scaled_qi);
+
+            acb_clear(dot);
+        }
+
+        acb_t norm;
+        acb_init(norm);
+        vector_norm(norm, v);
+        acb_set(acb_mat_entry(*R.get_mat(), j, j), norm);
+
+        if (!acb_is_zero(norm)) 
+        {
+            for (slong i = 0; i < n; i++) 
+            {
+                acb_div(acb_mat_entry(*Q.get_mat(), i, j), v[i], norm, BYTE_PRECISION);
+            }
+        }
+
+        acb_clear(norm);
+    }
+}
+
+acb_vector NestedSystemsSolver::solve_upper_triangular(const acb_matrix &R, const acb_vector &b) 
+{
+    slong n = R.row_count();
+
+    if (R.col_count() != n || b.get_size() != n) 
+    {
+        throw std::invalid_argument("Matrix must be square and vector must match the matrix size");
+    }
+
+    acb_vector x(n);
+
+    for (slong i = n - 1; i >= 0; i--) 
+    {
+        acb_t diag;
+        acb_init(diag);
+        acb_set(diag, acb_mat_entry(*R.get_mat(), i, i));
+
+        if (acb_is_zero(diag)) 
+        {
+            throw std::runtime_error("Matrix is singular or poorly conditioned");
+        }
+
+        acb_set(x[i], b[i]);
+
+        for (slong j = i + 1; j < n; j++)
+        {
+            acb_t temp;
+            acb_init(temp);
+            acb_mul(temp, acb_mat_entry(*R.get_mat(), i, j), x[j], BYTE_PRECISION);
+            acb_sub(x[i], x[i], temp, BYTE_PRECISION);
+            acb_clear(temp);
+        }
+
+        acb_div(x[i], x[i], diag, BYTE_PRECISION);
+        acb_clear(diag);
+    }
+
+    return x;
+}
+
+acb_vector NestedSystemsSolver::qr_solve_system(const acb_matrix &A_k, const acb_vector &b_k) 
+{
+    slong k = A_k.row_count();
+
+    if (A_k.col_count() != k || b_k.get_size() != k) 
+    {
+        throw std::invalid_argument("Matrix must be square and vector must match the matrix size");
+    }
+
+    acb_matrix Q(k, k);
+    acb_matrix R(k, k);
+    modified_gram_schmidt(Q, R, A_k);
+
+    acb_vector Q_T_b(k);
+    for (slong i = 0; i < k; i++) 
+    {
+        acb_vector q_i(k);
+        for (slong j = 0; j < k; j++) 
+        {
+            acb_set(q_i[j], acb_mat_entry(*Q.get_mat(), j, i));
+        }
+        dot_product(Q_T_b[i], q_i, b_k);
+    }
+
+    return solve_upper_triangular(R, Q_T_b);
+}
+
+void prepare_subsystem(acb_matrix &A_k, acb_vector &b_k, const acb_matrix &A, const acb_vector &b, slong k) 
+{
+    if (A.row_count() < k || A.col_count() < k || b.get_size() < k) 
+    {
+        throw std::invalid_argument("Requested submatrix size exceeds original dimensions");
+    }
+
+    A_k = acb_matrix(k, k);
+    b_k = acb_vector(k);
+
+    for (slong i = 0; i < k; i++) {
+        acb_set(b_k[i], b[i]);
+        for (slong j = 0; j < k; j++) {
+            acb_set(acb_mat_entry(*A_k.get_mat(), i, j), acb_mat_entry(*A.get_mat(), i, j));
+        }
+    }
+}
+
+void NestedSystemsSolver::qr_solve_all() 
+{   
+    fill_matrix();
+    fill_rhs();
+    std::vector<std::future<acb_vector>> futures;
+
+    acb_vector temp_rhs(rhs(0), max_system_size);
+
+    for (slong k = 1; k <= max_system_size; k++) 
+    {
+        futures.emplace_back(std::async(std::launch::async, [&, k]() 
+        {
+            acb_matrix A_k(k, k);
+            acb_vector b_k(k);
+            prepare_subsystem(A_k, b_k, matrix, temp_rhs, k);
+            return qr_solve_system(A_k, b_k);
+        }));
+    }
+
+    for (auto &f : futures) 
+    {
+        solutions.push_back(f.get());
     }
 }
