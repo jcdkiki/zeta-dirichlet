@@ -3,8 +3,7 @@
 
 #include <vector>
 #include "utils.hpp"
-#include "acb_vector.hpp"
-#include "acb_matrix.hpp"
+#include <acb_wrappers/matrix.hpp>
 
 void prepare_subsystem(acb_matrix &A_k, acb::Vector &b_k, const acb_matrix &A, const acb::Vector &b, slong k);
 
