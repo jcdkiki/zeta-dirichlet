@@ -75,49 +75,55 @@ ZetaFrame::ZetaFrame() : wxFrame(nullptr, wxID_ANY, "zeta-dirichlet")
 
 void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
 {
-    int n_zeros = n_zeros_ctrl->GetValue();
-    int byte_precision = byte_precision_ctrl->GetValue();
+    try {
+        int n_zeros = n_zeros_ctrl->GetValue();
+        int byte_precision = byte_precision_ctrl->GetValue();
 
-    std::vector<coefficient> fixed_coeficients;
-    for (int i = 0; i < fix_text_ctrl->GetNumberOfLines(); i++) {
-        wxString line = fix_text_ctrl->GetLineText(i);
-        if (line[0] == '#' || line.empty())
-            continue;
+        std::vector<coefficient> fixed_coeficients;
+        for (int i = 0; i < fix_text_ctrl->GetNumberOfLines(); i++) {
+            wxString line = fix_text_ctrl->GetLineText(i);
+            if (line[0] == '#' || line.empty())
+                continue;
 
-        char a, equals, lparen, rparen, comma;
-        int idx;
-        double real, imag;
+            char a, equals, lparen, rparen, comma;
+            int idx;
+            double real, imag;
 
-        std::stringstream ss;
-        ss << line.c_str();
-        ss >> std::ws >> a >> idx >> std::ws >> equals >> std::ws >> lparen
-           >> std::ws >> real >> std::ws >> comma >> std::ws >> imag >> std::ws >> rparen; 
+            std::stringstream ss;
+            ss << line.c_str();
+            ss >> std::ws >> a >> idx >> std::ws >> equals >> std::ws >> lparen
+            >> std::ws >> real >> std::ws >> comma >> std::ws >> imag >> std::ws >> rparen; 
 
-        if (ss.fail() || a != 'a' || equals != '=' || lparen != '(' || comma != ',' || rparen != ')') {
-            SetStatusText("Failed to parse: " + line);
-            return;
+            if (ss.fail() || a != 'a' || equals != '=' || lparen != '(' || comma != ',' || rparen != ')') {
+                SetStatusText("Failed to parse: " + line);
+                return;
+            }
+
+            fixed_coeficients.push_back(coefficient(idx, real, imag));
         }
 
-        fixed_coeficients.push_back(coefficient(idx, real, imag));
+        acb::Vector zeros(2 * n_zeros);
+        read_zeros(zeros, event.GetPath().c_str(), n_zeros, byte_precision);
+
+        NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
+        solver.qr_solve_all();
+        
+        coeffs_choice->Clear();
+        coeffs_choice->Append("None");
+        coefficients.clear();
+
+        for (int i = 0; i < n_zeros; i++) {
+            coefficients[i + 1] = solver.get_coefs_vector(i);
+            coeffs_choice->Append(wxString::Format("%d zeros", i + 1)); 
+        }
+
+        coeffs_choice->SetSelection(coeffs_choice->GetCount() - 1);
+        plot_panel->SetCoeffs(coefficients[n_zeros]);
     }
-
-    acb::Vector zeros(2 * n_zeros);
-    read_zeros(zeros, event.GetPath().c_str(), n_zeros, byte_precision);
-
-    NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
-    solver.qr_solve_all();
-    
-    coeffs_choice->Clear();
-    coeffs_choice->Append("None");
-    coefficients.clear();
-
-    for (int i = 0; i < n_zeros; i++) {
-        coefficients[i + 1] = solver.get_coefs_vector(i);
-        coeffs_choice->Append(wxString::Format("%d zeros", i + 1)); 
+    catch (std::exception &e) {
+        SetStatusText(e.what());
+        return;
     }
-
-    coeffs_choice->SetSelection(coeffs_choice->GetCount() - 1);
-    plot_panel->SetCoeffs(coefficients[n_zeros]);
 
     SetStatusText("Everything done!");
 

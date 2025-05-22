@@ -3,8 +3,7 @@
 
 #include <flint/acb.h>
 #include <vector>
-#include "acb_matrix.hpp"
-#include "acb_vector.hpp"
+#include <acb_wrappers/matrix.hpp>
 #include "utils.hpp"
 
 void fill_rhs(acb_matrix& rhs, const std::vector<coefficient>& fixed_coefficients, slong size);

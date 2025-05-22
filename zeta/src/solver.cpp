@@ -1,5 +1,5 @@
 #include "solver.hpp"
-#include "acb_matrix.hpp"
+#include <acb_wrappers/matrix.hpp>
 #include "common.hpp"
 #include <vector>
 #include <memory>

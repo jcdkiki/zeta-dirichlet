@@ -1,9 +1,9 @@
-#ifndef ACB_MATRIX_HPP
-#define ACB_MATRIX_HPP
+#ifndef ACB_WRAPPERS_MATRIX_HPP
+#define ACB_WRAPPERS_MATRIX_HPP
 
 #include <flint/acb.h>
 #include <flint/acb_mat.h>
-#include "acb_vector.hpp"
+#include "acb_wrappers/vector.hpp"
 
 class acb_matrix 
 {

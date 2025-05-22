@@ -1,5 +1,5 @@
-#include "acb_vector.hpp"
-#include "common.hpp"
+#include "acb_wrappers/vector.hpp"
+#include "acb_wrappers/common.hpp"
 
 // TODO: hmmmmmm
 static constexpr int BYTE_PRECISION = 2048;
@@ -74,7 +74,7 @@ namespace acb {
 void dot_product(acb_t res, const acb::Vector &v1, const acb::Vector &v2) 
 {
     if (v1.size() != v2.size()) {
-        throw ZetaException("Vectors must be of the same size");
+        throw AcbException("Vectors must be of the same size");
     }
 
     acb_zero(res);
@@ -101,7 +101,7 @@ void vector_norm(acb_t norm, const acb::Vector &v)
 acb::Vector subtract_vectors(const acb::Vector &v1, const acb::Vector &v2) 
 {
     if (v1.size() != v2.size()) {
-        throw ZetaException("Vectors must be of the same size");
+        throw AcbException("Vectors must be of the same size");
     }
 
     acb::Vector result(v1.size());

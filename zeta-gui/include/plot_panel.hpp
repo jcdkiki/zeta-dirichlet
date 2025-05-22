@@ -1,7 +1,7 @@
 #ifndef PLOT_PANEL_HPP
 #define PLOT_PANEL_HPP
 
-#include "acb_vector.hpp"
+#include <acb_wrappers/vector.hpp>
 #include <wx/glcanvas.h>
 
 struct Vec2d {

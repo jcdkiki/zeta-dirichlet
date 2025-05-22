@@ -1,5 +1,5 @@
-#ifndef ACB_VECTOR_HPP
-#define ACB_VECTOR_HPP
+#ifndef ACB_WRAPPERS_VECTOR_HPP
+#define ACB_WRAPPERS_VECTOR_HPP
 
 #include <flint/flint.h>
 #include <flint/acb.h>

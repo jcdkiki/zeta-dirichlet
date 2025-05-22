@@ -1,7 +1,7 @@
 #ifndef DIRICHLET_SERIES_HPP
 #define DIRICHLET_SERIES_HPP
 
-#include "acb_vector.hpp"
+#include <acb_wrappers/vector.hpp>
 
 class DirichletSeries
 {
