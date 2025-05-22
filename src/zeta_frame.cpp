@@ -1,12 +1,10 @@
 #include "zeta_frame.hpp"
 #include "reader.hpp"
-#include "solver.hpp"
 #include "plot_panel.hpp"
 #include "utils.hpp"
+#include "nested_systems_solver.hpp"
 
 #include <sstream>
-#include <wx/gdicmn.h>
-#include <wx/glcanvas.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/string.h>
@@ -14,11 +12,13 @@
 enum {
     ID_LoadFile = 1,
     ID_NZeros,
-    ID_BytePrecision
+    ID_BytePrecision,
+    ID_CoeffsChoice,
 };
 
 wxBEGIN_EVENT_TABLE(ZetaFrame, wxFrame)
     EVT_FILEPICKER_CHANGED(ID_LoadFile, ZetaFrame::OnLoadFile)
+    EVT_CHOICE(ID_CoeffsChoice, ZetaFrame::OnCoeffsChoice)
 wxEND_EVENT_TABLE();
 
 ZetaFrame::ZetaFrame() : wxFrame(nullptr, wxID_ANY, "zeta-dirichlet")
@@ -48,6 +48,11 @@ ZetaFrame::ZetaFrame() : wxFrame(nullptr, wxID_ANY, "zeta-dirichlet")
         wxSP_ARROW_KEYS, 1, INT_MAX, 2048
     );
     upper_sizer->Add(byte_precision_ctrl);
+
+    coeffs_choice = new wxChoice(this, ID_CoeffsChoice);
+    coeffs_choice->Append("None");
+    coeffs_choice->SetSelection(0);
+    upper_sizer->Add(coeffs_choice);
 
     plot_panel = new PlotPanel(this, nullptr);
     main_sizer->Add(plot_panel);
@@ -99,12 +104,47 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
     acb::Vector zeros(2 * n_zeros);
     read_zeros(zeros, event.GetPath().c_str(), n_zeros, byte_precision);
 
-    slong system_size = 2 * n_zeros + fixed_coeficients.size();
+    NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
+    solver.qr_solve_all();
+    
+    coeffs_choice->Clear();
+    coeffs_choice->Append("None");
+    coefficients.clear();
 
-    acb_matrix res(system_size, 1);
-    solve(res, zeros, fixed_coeficients, byte_precision);
+    for (int i = 0; i < n_zeros; i++) {
+        coefficients[i + 1] = solver.get_coefs_vector(i);
+        coeffs_choice->Append(wxString::Format("%d zeros", i + 1)); 
+    }
 
-    plot_panel->SetCoeffs(acb::Vector(res(0), system_size));
+    coeffs_choice->SetSelection(coeffs_choice->GetCount() - 1);
+    plot_panel->SetCoeffs(coefficients[n_zeros]);
 
     SetStatusText("Everything done!");
+
+    // конечный ряд с заданными коэффициентами
+    // DirichletSeries series(ns_solver.get_coefs_vector(0));
+    // пример вычисления ряда в точке
+    // можно расскоментировать
+    // acb_t r;
+    // acb_init(r);
+
+    // acb_t X;
+    // acb_init(X);
+    // acb_set_d_d(X, 1.0, 0.0);
+    // series.calculate(r, X, BYTE_PRECISION);
+    // acb_printd(r, N_PRECISION);
+    // std::cout<<std::endl;
+
+    // acb_clear(r);
+    // acb_clear(X);
+}
+
+void ZetaFrame::OnCoeffsChoice(wxCommandEvent &event)
+{
+    int selection = event.GetSelection();
+    if (selection == 0) {
+        plot_panel->SetCoeffs(acb::Vector());
+    }
+
+    plot_panel->SetCoeffs(coefficients[selection]);
 }

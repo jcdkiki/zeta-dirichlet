@@ -27,4 +27,9 @@ namespace acb {
     };
 }
 
+void dot_product(acb_t res, const acb::Vector &v1, const acb::Vector &v2);
+void vector_norm(acb_t norm, const acb::Vector &v);
+acb::Vector subtract_vectors(const acb::Vector &v1, const acb::Vector &v2);
+acb::Vector scalar_multiply(const acb::Vector &v, const acb_t &scalar);
+
 #endif

@@ -2,3 +2,4 @@ docs/*.pdf
 .vscode
 build
 zeros.val
+.cache

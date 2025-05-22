@@ -24,6 +24,7 @@ add_executable(zeta
     src/solver.cpp
     src/zeta_app.cpp
     src/zeta_frame.cpp
+    src/nested_systems_solver.cpp
 )
 
 target_include_directories(zeta PRIVATE include)
@@ -32,7 +33,7 @@ target_include_directories(zeta PRIVATE ${FLINT_INCLUDE_DIRS} ${wxWidgets_INCLUD
 target_compile_options(zeta PRIVATE ${FLINT_CFLAGS} ${wxWidgets_CXX_FLAGS})
 target_link_libraries(zeta PRIVATE ${FLINT_LIBRARIES} ${wxWidgets_LIBRARIES} GL)
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug" OR CMAKE_BUILD_TYPE MATCHES "Release")
+if(CMAKE_BUILD_TYPE MATCHES "Release")
     target_compile_options(zeta PRIVATE -fsanitize=address)
     target_link_options(zeta PRIVATE -fsanitize=address)
 endif()

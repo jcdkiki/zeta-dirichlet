@@ -3,6 +3,14 @@
 
 #include "acb_vector.hpp"
 
-void calculate_dirichlet_series(const acb::Vector &coefficients, acb_t result, acb_t X, slong precision);
+class DirichletSeries
+{
+private:
+    acb::Vector coefficients;
+public:
+    DirichletSeries(acb::Vector& series_coefs);
+
+    void calculate(acb_t result, acb_t X, slong precision);
+};
 
 #endif

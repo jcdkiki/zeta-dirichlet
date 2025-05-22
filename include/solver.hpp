@@ -2,18 +2,19 @@
 #define SOLVER_HPP
 
 #include <flint/acb.h>
-#include <map>
 #include <vector>
 #include "acb_matrix.hpp"
 #include "acb_vector.hpp"
 #include "utils.hpp"
 
-void fill_matrix(acb_matrix& matrix, std::vector<coefficient>& fixated_coefficients, const acb::Vector &zeros, slong precision);
+void fill_rhs(acb_matrix& rhs, const std::vector<coefficient>& fixed_coefficients, slong size);
 
-void solve(acb_matrix& res, const acb::Vector &zeros, std::vector<coefficient> &fixated_coefficients, slong precision);
+void fill_rhs(acb::Vector& rhs, const std::vector<coefficient>& fixed_coefficients, slong size);
 
-void solve_all(const acb::Vector &zeros, slong max_m, slong precision, const char *filename = nullptr);
+void fill_matrix(acb_matrix& matrix, const std::vector<coefficient>& fixed_coefficients, const acb::Vector& zeros, slong precision);
 
-void compute_series(acb_t result, const acb_t s, int m, const std::map<int, acb::Vector> &solutions, slong precision);
+void solve(acb_matrix& res, const acb::Vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision);
+
+void solve_all(acb_matrix& res, const acb::Vector& zeros, const std::vector<coefficient>& fixed_coefficients, slong precision);
 
 #endif
