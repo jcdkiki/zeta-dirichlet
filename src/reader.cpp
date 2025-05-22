@@ -1,10 +1,14 @@
-#include "../hdrs/reader.hpp"
+#include "reader.hpp"
+#include "acb_vector.hpp"
+#include <iostream>
+#include <fstream>
 
-void read_zeros(acb_vector& zeros, const char* filepath, slong n_zeros, slong prec) 
+void read_zeros(acb::Vector &zeros, const char *filepath, slong n_zeros, slong prec) 
 {
+    // TODO: throw exception on failure (not enough zeros or failed to open file)
+
     std::ifstream file(filepath);
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         std::cerr << "Error: Could not open file " << filepath << std::endl;
         return;
     }
@@ -38,17 +42,16 @@ void read_zeros(acb_vector& zeros, const char* filepath, slong n_zeros, slong pr
         zeros_found += 2;
     }
 
-    zeros.set_size(zeros_found);
     arb_clear(re);
     arb_clear(im_part);
     file.close();
 }
 
-void print_zeros(const acb_vector &zeros, slong n_zeros, slong precision)
+void print_zeros(const acb::Vector &zeros, slong n_zeros, slong precision)
 {
-    for (slong i = 0; i < std::min(zeros.get_size(), n_zeros); ++i) 
+    for (slong i = 0; i < std::min(zeros.size(), n_zeros); ++i) 
     {
-        acb_printn(zeros.get_ptr(i), precision, 0);
+        acb_printn(zeros[i], precision, 0);
         flint_printf("\n");
     }
 }

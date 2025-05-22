@@ -1,12 +1,13 @@
-#include "../hdrs/solver.hpp"
-#include "../hdrs/acb_matrix.hpp"
+#include "solver.hpp"
+#include "acb_matrix.hpp"
+#include "acb_vector.hpp"
 #include <vector>
 #include <memory>
-#include <iostream>
-#include <stdexcept>
 
-void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_matrix>>& solutions, slong max_m) 
+void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_matrix>>& solutions, slong max_m, slong precision) 
 { 
+    // TODO: throw exception on error
+
     FILE* file = fopen(filename, "w");
     if (!file) return;
     
@@ -18,26 +19,23 @@ void save_solutions(const char* filename, const std::vector<std::unique_ptr<acb_
 
         for (slong i = 0; i < m; ++i) 
         {
-            acb_fprintd(file, acb_mat_entry(*solutions[(m-1)/2]->get_mat(), i, 0), N_PRECISION);
+            acb_fprintd(file, acb_mat_entry(*solutions[(m-1)/2]->get_mat(), i, 0), precision);
             flint_fprintf(file, "\n");
         }
     }
     fclose(file);
 }
 
-void fill_matrix(acb_matrix& matrix, std::vector<coefficient>& fixated_coefficients, const acb_vector& zeros, slong precision) 
+void fill_matrix(acb_matrix& matrix, std::vector<coefficient>& fixated_coefficients, const acb::Vector &zeros, slong precision) 
 {
     acb_t base, exp, res;
     acb_init(base);
     acb_init(exp);
     acb_init(res);
 
-    slong n_zeros = zeros.get_size();
-
+    slong n_zeros = zeros.size();
     slong n_fix_coefs = fixated_coefficients.size();
-
     slong system_size = n_zeros + n_fix_coefs;
-
 
     for (slong i = 0; i < system_size; ++i) {
         for (slong j = 0; j < system_size; ++j) {
@@ -49,7 +47,7 @@ void fill_matrix(acb_matrix& matrix, std::vector<coefficient>& fixated_coefficie
     for (slong i = 0; i < n_zeros; ++i) {
         for (slong j = 0; j < system_size; ++j) {
             acb_set_d_d(base, j + 1, 0.0);       // base = (j+1) + 0i
-            acb_set(exp, zeros.get_ptr(i));       // exp = zeros[i]
+            acb_set(exp, zeros[i]);       // exp = zeros[i]
             acb_neg(exp, exp);
             acb_pow(res, base, exp, precision);  // res = base^-exp
             acb_set(acb_mat_entry(*matrix.get_mat(), i, j), res);
@@ -68,16 +66,13 @@ void fill_matrix(acb_matrix& matrix, std::vector<coefficient>& fixated_coefficie
     acb_clear(res);
 }
 
-void solve(acb_matrix& res, const acb_vector& zeros, std::vector<coefficient>& fixated_coefficients, slong precision)
+void solve(acb_matrix& res, const acb::Vector &zeros, std::vector<coefficient> &fixated_coefficients, slong precision)
 {
-    slong n_zeros = zeros.get_size();
-
+    slong n_zeros = zeros.size();
     slong n_fix_coefs = fixated_coefficients.size();
-
     slong system_size = n_zeros + n_fix_coefs;
-
+    
     acb_matrix matrix(system_size, system_size);
-
     fill_matrix(matrix, fixated_coefficients, zeros, precision);
 
     acb_matrix b(system_size, 1);
