@@ -2,4 +2,7 @@ docs/*.pdf
 .vscode
 build
 zeros.val
+<<<<<<< HEAD
 .cache
+=======
+>>>>>>> main
