@@ -18,12 +18,39 @@ private:
     std::vector<acb_vector> solutions;
     acb_matrix matrix;
     acb_matrix rhs;
-
 private:
     void fill_matrix();
 
     void fill_rhs();
 
+private:
+    // lu funcs
+    void initialize_identity_matrix(acb_matrix& P);
+    
+    void initialize_base_case(acb_matrix& L, acb_matrix& U, acb_vector& y, acb_vector& x);
+
+    slong find_pivot_index(slong k, const acb_matrix& matrix);
+
+    void swap_rows(acb_matrix& matrix, acb_matrix& rhs, acb_matrix& L, acb_matrix& P, slong k, slong pivot_idx);
+
+    void compute_u_vector(acb_vector& u, slong k);
+
+    void compute_w_vector(acb_vector& w, const acb_vector& u, const acb_matrix& L, slong k);
+
+    void compute_v_vector(acb_vector& v, slong k);
+
+    void compute_l_vector(acb_vector& l, const acb_vector& v, const acb_matrix& U, slong k);
+
+    void compute_s(acb_t& s, const acb_vector& l, const acb_vector& w, slong k);
+
+    void update_LU_matrices(acb_matrix& L, acb_matrix& U, const acb_vector& l, const acb_vector& w, const acb_t& s, slong k);
+
+    void solve_forward_substitution(acb_vector& y, const acb_matrix& L, const acb_matrix& rhs, slong size);
+
+    void solve_backward_substitution(acb_vector& x, const acb_vector& y, const acb_matrix& U, slong size);
+
+private:
+    // qr funcs
     void modified_gram_schmidt(acb_matrix &Q, acb_matrix &R, const acb_matrix &A);
 
     acb_vector solve_upper_triangular(const acb_matrix &R, const acb_vector &b);

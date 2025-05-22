@@ -17,8 +17,8 @@ int main()
 
     NestedSystemsSolver ns_solver(fixed_coeficients, zeros);
 
-    ns_solver.qr_solve_all();
-    auto sols = ns_solver.get_coefs_vector(3    );
+    ns_solver.lu_solve_all();
+    auto sols = ns_solver.get_coefs_vector(16);
 
     for (int i = 0; i < sols.get_size(); ++i)
     {
