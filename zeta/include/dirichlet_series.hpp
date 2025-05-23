@@ -7,8 +7,11 @@ class DirichletSeries
 {
 private:
     acb::Vector coefficients;
+    acb_t pow, base, exp;
+
 public:
     DirichletSeries(acb::Vector& series_coefs);
+    ~DirichletSeries();
 
     void calculate(acb_t result, acb_t X, slong precision);
 };

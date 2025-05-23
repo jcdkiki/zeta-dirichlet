@@ -1,76 +1,103 @@
 #include "zeta_frame.hpp"
+#include "dirichlet_series.hpp"
 #include "reader.hpp"
 #include "plot_panel.hpp"
 #include "utils.hpp"
 #include "nested_systems_solver.hpp"
 
 #include <sstream>
-#include <wx/sizer.h>
+#include <wx/gbsizer.h>
 #include <wx/stattext.h>
-#include <wx/string.h>
+
+static constexpr int ZETA_FRAME_STYLE = wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX);
 
 enum {
     ID_LoadFile = 1,
     ID_NZeros,
     ID_BytePrecision,
     ID_CoeffsChoice,
+    ID_FitButton
 };
 
 wxBEGIN_EVENT_TABLE(ZetaFrame, wxFrame)
     EVT_FILEPICKER_CHANGED(ID_LoadFile, ZetaFrame::OnLoadFile)
     EVT_CHOICE(ID_CoeffsChoice, ZetaFrame::OnCoeffsChoice)
+    EVT_BUTTON(ID_FitButton, ZetaFrame::OnFitButton)
 wxEND_EVENT_TABLE();
 
-ZetaFrame::ZetaFrame() : wxFrame(nullptr, wxID_ANY, "zeta-dirichlet")
+ZetaFrame::ZetaFrame() 
+    : wxFrame(nullptr, wxID_ANY, "zeta-dirichlet",wxDefaultPosition, wxDefaultSize, ZETA_FRAME_STYLE)
 {
     CreateStatusBar();
     SetStatusText("Welcome to zeta-dirichlet!");
     
-    wxBoxSizer *main_sizer = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer *upper_sizer = new wxBoxSizer(wxHORIZONTAL);
-    main_sizer->Add(upper_sizer);
-
+    wxGridBagSizer *sizer = new wxGridBagSizer();
+    
     wxFilePickerCtrl *file_picker = new wxFilePickerCtrl(this,
         ID_LoadFile, wxEmptyString, "Open zeros.val file",
         wxFileSelectorDefaultWildcardStr, wxDefaultPosition,
         wxSize(300, -1), wxFLP_OPEN | wxFLP_FILE_MUST_EXIST 
     );
-    upper_sizer->Add(file_picker);
-    
+
     n_zeros_ctrl = new wxSpinCtrl(this,
         ID_NZeros, wxEmptyString, wxDefaultPosition, wxDefaultSize,
         wxSP_ARROW_KEYS, 1, INT_MAX, 50
     );
-    upper_sizer->Add(n_zeros_ctrl);
-
+    
     byte_precision_ctrl = new wxSpinCtrl(this,
         ID_BytePrecision, wxEmptyString, wxDefaultPosition, wxDefaultSize,
         wxSP_ARROW_KEYS, 1, INT_MAX, 2048
     );
-    upper_sizer->Add(byte_precision_ctrl);
-
-    coeffs_choice = new wxChoice(this, ID_CoeffsChoice);
-    coeffs_choice->Append("None");
-    coeffs_choice->SetSelection(0);
-    upper_sizer->Add(coeffs_choice);
-
-    plot_panel = new PlotPanel(this, nullptr);
-    main_sizer->Add(plot_panel);
-
-    wxBoxSizer *lower_sizer = new wxBoxSizer(wxHORIZONTAL);
-    main_sizer->AddSpacer(10);
-    main_sizer->Add(lower_sizer);
-
+    
+    
+    choicebook = new wxChoicebook(this, wxID_ANY);
+    coefficients_plot = new CoefficientsPlotPanel(choicebook, nullptr);
+    errors_plot = new CoefficientsPlotPanel(choicebook, nullptr);
+    series_plot = new DynamicPlotPanel(choicebook, nullptr);
+    choicebook->AddPage(coefficients_plot, "Coefficients");
+    choicebook->AddPage(errors_plot, "Errors");
+    choicebook->AddPage(series_plot, "Series");
+    
     fix_text_ctrl = new wxTextCtrl(this,
         wxID_ANY, "a0 = (1, 0)", wxDefaultPosition, wxSize(-1, 100),
         wxTE_MULTILINE | wxVSCROLL | wxTE_DONTWRAP
     );
-    lower_sizer->AddSpacer(10);
-    lower_sizer->Add(fix_text_ctrl);
-    lower_sizer->AddSpacer(30);
-    lower_sizer->Add(new wxStaticText(this, wxID_ANY, "..."));
     
-    SetSizerAndFit(main_sizer);
+    coeffs_choice = new wxChoice(this, ID_CoeffsChoice);
+    coeffs_choice->Append("None");
+    coeffs_choice->SetSelection(0);
+    
+    wxButton *fit_button = new wxButton(this, ID_FitButton, "Fit");
+
+    // SIZER
+    sizer->Add(file_picker, wxGBPosition(0, 0), wxDefaultSpan, wxEXPAND);
+    sizer->Add(n_zeros_ctrl, wxGBPosition(0, 1), wxDefaultSpan, wxEXPAND);
+    sizer->Add(byte_precision_ctrl, wxGBPosition(0, 2), wxDefaultSpan, wxEXPAND);
+    
+    sizer->Add(fix_text_ctrl, wxGBPosition(1, 0), wxDefaultSpan, wxEXPAND);
+    sizer->Add(choicebook, wxGBPosition(1, 1), wxGBSpan(1, 2), wxEXPAND);
+    
+    sizer->Add(coeffs_choice, wxGBPosition(2, 0), wxDefaultSpan, wxEXPAND);
+    sizer->Add(fit_button, wxGBPosition(2, 1), wxDefaultSpan);
+
+    SetSizerAndFit(sizer);
+}
+
+double GetSeriesY(double x, DirichletSeries *series)
+{
+    acb_t Y;
+    acb_init(Y);
+    
+    acb_t X;
+    acb_init(X);
+    acb_set_d_d(X, x, 0.0);
+    series->calculate(Y, X, 2048);
+    double y = arf_get_d(&Y->real.mid, ARF_RND_NEAR);
+
+    acb_clear(Y);
+    acb_clear(X);
+
+    return y;
 }
 
 void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
@@ -113,12 +140,35 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
         coefficients.clear();
 
         for (int i = 0; i < n_zeros; i++) {
-            coefficients[i + 1] = solver.get_coefs_vector(i);
-            coeffs_choice->Append(wxString::Format("%d zeros", i + 1)); 
+            acb::Vector acb_coefficients = solver.get_coefs_vector(i);
+            std::vector<double> double_coefficients;
+            std::vector<double> double_errors;
+            for (int j = 0; j < acb_coefficients.size(); j++) {
+                double c = arf_get_d(&acb_coefficients[j]->real.mid, ARF_RND_NEAR);
+                mag_log(&acb_coefficients[j]->real.rad, &acb_coefficients[j]->real.rad);
+                double e = mag_get_d(&acb_coefficients[j]->real.rad);
+                double_coefficients.push_back(c);
+                double_errors.push_back(e);
+            }
+
+            this->acb_coefficients[i + 1] = acb_coefficients;
+
+            if (!isnan(double_coefficients[0])) {
+                coefficients[i + 1] = std::move(double_coefficients);
+                errors[i + 1] = std::move(double_errors);
+                coeffs_choice->Append(wxString::Format("%d zeros", i + 1)); 
+            }
         }
 
         coeffs_choice->SetSelection(coeffs_choice->GetCount() - 1);
-        plot_panel->SetCoeffs(coefficients[n_zeros]);
+        coefficients_plot->SetCoefficients(coefficients.rbegin()->second);
+        errors_plot->SetCoefficients(errors.rbegin()->second);
+
+        if (series_plot->user_ptr != nullptr) {
+            delete ((DirichletSeries*)series_plot->user_ptr);
+        }
+        series_plot->user_ptr = new DirichletSeries(acb_coefficients.rbegin()->second);
+        series_plot->func = (DynamicPlotPanel::Func)GetSeriesY;
     }
     catch (std::exception &e) {
         SetStatusText(e.what());
@@ -126,31 +176,32 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
     }
 
     SetStatusText("Everything done!");
-
-    // конечный ряд с заданными коэффициентами
-    // DirichletSeries series(ns_solver.get_coefs_vector(0));
-    // пример вычисления ряда в точке
-    // можно расскоментировать
-    // acb_t r;
-    // acb_init(r);
-
-    // acb_t X;
-    // acb_init(X);
-    // acb_set_d_d(X, 1.0, 0.0);
-    // series.calculate(r, X, BYTE_PRECISION);
-    // acb_printd(r, N_PRECISION);
-    // std::cout<<std::endl;
-
-    // acb_clear(r);
-    // acb_clear(X);
 }
 
 void ZetaFrame::OnCoeffsChoice(wxCommandEvent &event)
 {
-    int selection = event.GetSelection();
-    if (selection == 0) {
-        plot_panel->SetCoeffs(acb::Vector());
+    if (series_plot->user_ptr != nullptr) {
+        delete (DirichletSeries*)series_plot->user_ptr;
     }
 
-    plot_panel->SetCoeffs(coefficients[selection]);
+    int selection = event.GetSelection();
+    if (selection == 0) {
+        coefficients_plot->SetCoefficients(std::vector<double>());
+        errors_plot->SetCoefficients(std::vector<double>());
+
+        series_plot->func = nullptr;
+    }
+
+    int n_zeros;
+    sscanf(event.GetString().c_str(), "%d", &n_zeros);
+
+    coefficients_plot->SetCoefficients(coefficients[n_zeros]);
+    errors_plot->SetCoefficients(errors[n_zeros]);
+    series_plot->user_ptr = new DirichletSeries(acb_coefficients[n_zeros]);
+}
+
+void ZetaFrame::OnFitButton(wxCommandEvent &event)
+{
+    coefficients_plot->FitPlot();
+    errors_plot->FitPlot();
 }
