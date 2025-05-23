@@ -1,14 +1,24 @@
 #include "dirichlet_series.hpp"
-#include "utils.hpp"
+#include "acb_wrappers/vector.hpp"
+#include <utility>
 
-void calculate_dirichlet_series(const acb::Vector &coefficients, acb_t result, acb_t X, slong precision)
+DirichletSeries::DirichletSeries(acb::Vector &series_coefs): coefficients(std::move(series_coefs))
 {
-    acb_zero(result);
-
-    acb_t pow, base, exp;
     acb_init(pow);
     acb_init(base);
     acb_init(exp);
+}
+
+DirichletSeries::~DirichletSeries()
+{
+    acb_clear(base);
+    acb_clear(pow);
+    acb_clear(exp);
+}
+
+void DirichletSeries::calculate(acb_t result, acb_t X, slong precision)
+{
+    acb_zero(result);
 
     acb_neg(exp, X); // -x
 
@@ -20,8 +30,4 @@ void calculate_dirichlet_series(const acb::Vector &coefficients, acb_t result, a
 
         acb_add(result, result, pow, precision);
     }
-
-    acb_clear(base);
-    acb_clear(pow);
-    acb_clear(exp);
 }
