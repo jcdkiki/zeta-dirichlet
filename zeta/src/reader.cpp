@@ -1,9 +1,9 @@
 #include "reader.hpp"
-#include <acb_wrappers/vector.hpp>
-#include <iostream>
+#include <flint_wrappers/real.hpp>
 #include <fstream>
+#include <iostream>
 
-void read_zeros(acb::Vector &zeros, const char *filepath, slong n_zeros, slong prec) 
+void read_zeros(flint::Vector &zeros, const char *filepath, slong n_zeros, slong prec)
 {
     // TODO: throw exception on failure (not enough zeros or failed to open file)
 
@@ -13,45 +13,33 @@ void read_zeros(acb::Vector &zeros, const char *filepath, slong n_zeros, slong p
         return;
     }
 
-    arb_t re, im_part;
-    arb_init(re);
-    arb_init(im_part);
-    arb_set_str(re, "0.5", prec);
-
+    flint::Real real = 0.5;
+    flint::Real imag;
+    
     std::string line;
     slong zeros_found = 0;
 
-    for (slong i = 0; i < n_zeros; ++i) 
-    {
+    for (slong i = 0; i < n_zeros; ++i) {
         if (!std::getline(file, line))
             break;
 
-        if (arb_set_str(im_part, line.c_str(), prec)) 
-        {
+        if (imag.set(line.c_str(), prec)) {
             std::cerr << "Failed to parse: " << line << std::endl;
             continue;
         }
 
+        zeros[zeros_found++].set(real, imag);
+        
         // coпряженный корень
-        arb_neg(im_part, im_part);
-        acb_set_arb_arb(zeros[zeros_found], re, im_part);
-
-        arb_neg(im_part, im_part);
-        acb_set_arb_arb(zeros[zeros_found + 1], re, im_part);
-
-        zeros_found += 2;
+        neg(imag, imag);
+        zeros[zeros_found++].set(real, imag);
     }
-
-    arb_clear(re);
-    arb_clear(im_part);
-    file.close();
 }
 
-void print_zeros(const acb::Vector &zeros, slong n_zeros, slong precision)
+void print_zeros(const flint::Vector &zeros, slong n_zeros, slong precision)
 {
-    for (slong i = 0; i < std::min(zeros.size(), n_zeros); ++i) 
-    {
-        acb_printn(zeros[i], precision, 0);
+    for (slong i = 0; i < std::min(zeros.size(), n_zeros); ++i) {
+        acb_printn(zeros[i].get(), precision, 0);
         flint_printf("\n");
     }
 }

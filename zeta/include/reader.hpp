@@ -1,13 +1,10 @@
 #ifndef READER_HPP
 #define READER_HPP
 
-#include <acb_wrappers/vector.hpp>
-#include <flint/acb.h>
-#include <flint/acb_mat.h>
-#include <flint/arb.h>
+#include <flint_wrappers/vector.hpp>
 
-void read_zeros(acb::Vector &zeros, const char* filepath, slong n_zeros, slong precision);
+void read_zeros(flint::Vector &zeros, const char *filepath, slong n_zeros, slong precision);
 
-void print_zeros(const acb::Vector &zeros, slong n_zeros, slong precision);
+void print_zeros(const flint::Vector &zeros, slong n_zeros, slong precision);
 
 #endif

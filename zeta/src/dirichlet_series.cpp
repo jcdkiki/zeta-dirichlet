@@ -1,33 +1,14 @@
 #include "dirichlet_series.hpp"
-#include "acb_wrappers/vector.hpp"
-#include <utility>
 
-DirichletSeries::DirichletSeries(acb::Vector &series_coefs): coefficients(std::move(series_coefs))
+void DirichletSeries::calculate(flint::Complex &result, const flint::Complex &X, slong precision)
 {
-    acb_init(pow);
-    acb_init(base);
-    acb_init(exp);
-}
+    result = 0.0;
+    neg(exp, X); // -x
 
-DirichletSeries::~DirichletSeries()
-{
-    acb_clear(base);
-    acb_clear(pow);
-    acb_clear(exp);
-}
-
-void DirichletSeries::calculate(acb_t result, acb_t X, slong precision)
-{
-    acb_zero(result);
-
-    acb_neg(exp, X); // -x
-
-    for (slong i = 0; i < coefficients.size(); ++i)
-    {
-        acb_set_si(base, i + 1);
-        acb_pow(pow, base, exp, precision); // (i + 1) ^ -X
-        acb_mul(pow, pow, coefficients[i], precision); // a_n * (i + 1) ^ -X
-
-        acb_add(result, result, pow, precision);
+    for (slong i = 0; i < coefficients.size(); ++i) {
+        base = (double)(i + 1); // TODO: acb_set_si
+        flint::pow(pow, base, exp, precision); // (i + 1) ^ -X
+        flint::mul(pow, pow, coefficients[i], precision); // a_n * (i + 1) ^ -X
+        flint:add(result, result, pow, precision);
     }
 }

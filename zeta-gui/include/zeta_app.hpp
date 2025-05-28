@@ -4,7 +4,7 @@
 #include <wx/app.h>
 
 class ZetaApp : public wxApp {
-public:
+  public:
     bool OnInit() override;
 };
 
