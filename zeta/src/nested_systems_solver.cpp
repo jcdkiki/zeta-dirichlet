@@ -187,7 +187,7 @@ void NestedSystemsSolver::compute_l_vector(flint::Vector &l, const flint::Vector
 void NestedSystemsSolver::compute_s(flint::Complex &s, const flint::Vector &l, const flint::Vector &w, slong k)
 {
     flint::Complex temp_dot;
-    dot_product(temp_dot, l, w);
+    flint::dot(temp_dot, l, w, BYTE_PRECISION);
     flint::sub(s, matrix.at(k, k), temp_dot, BYTE_PRECISION);
 }
 
@@ -296,15 +296,16 @@ void NestedSystemsSolver::modified_gram_schmidt(flint::Matrix &Q, flint::Matrix 
                 qi[k].set(Q.at(k, i));
             }
 
-            dot_product(dot, qi, v);
+            flint::dot(dot, qi, v, BYTE_PRECISION);
             R.at(i, j).set(dot);
 
-            flint::Vector scaled_qi = scalar_multiply(qi, dot);
-            v = subtract_vectors(v, scaled_qi);
+            flint::Vector scaled_qi;
+            flint::mul(scaled_qi, qi, dot, BYTE_PRECISION);
+            flint::sub(v, v, scaled_qi, BYTE_PRECISION);
         }
 
         flint::Complex norm;
-        vector_norm(norm, v);
+        flint::norm(norm, v, BYTE_PRECISION);
         R.at(j, j).set(norm);
 
         if (!norm.is_zero()) {
@@ -363,7 +364,7 @@ flint::Vector NestedSystemsSolver::qr_solve_system(const flint::Matrix &A_k, con
         for (slong j = 0; j < k; j++) {
             q_i[j].set(Q.at(j, i));
         }
-        dot_product(Q_T_b[i], q_i, b_k);
+        dot(Q_T_b[i], q_i, b_k, BYTE_PRECISION);
     }
 
     return solve_upper_triangular(R, Q_T_b);
