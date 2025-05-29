@@ -9,6 +9,10 @@ namespace flint {
 Vector::Vector(slong _size) noexcept : _size(_size)
 {
     _data = (_size == 0) ? nullptr : _acb_vec_init(_size);
+    for (slong i = 0; i < _size; ++i)
+    {
+        acb_set_d_d(this->_data, 0.0, 0.0);
+    }
 }
 
 Vector::Vector(const acb_ptr _data, slong _size)

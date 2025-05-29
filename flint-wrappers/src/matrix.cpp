@@ -66,7 +66,7 @@ std::ostream &operator<<(std::ostream &os, const Matrix &mat)
     return os;
 }
 
-Vector matrix_vector_multiply(const Matrix &M, const Vector &v, mp_limb_signed_t precision)
+Vector matrix_vector_multiply(const Matrix &M, const Vector &v, slong precision)
 {
     if (M.ncols() != v.size()) {
         throw std::invalid_argument("Matrix columns must match vector size");

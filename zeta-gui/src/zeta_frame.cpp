@@ -109,7 +109,7 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
         read_zeros(zeros, event.GetPath().c_str(), n_zeros, byte_precision);
 
         NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
-        solver.slow_solve_all();
+        solver.optimized_lu_solve_all();
 
         coeffs_choice->Clear();
         coeffs_choice->Append("None");
