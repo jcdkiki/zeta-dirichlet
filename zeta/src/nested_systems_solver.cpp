@@ -1,6 +1,7 @@
 #include "nested_systems_solver.hpp"
 #include "common.hpp"
 #include "flint_wrappers/matrix.hpp"
+#include "flint_wrappers/complex.hpp"
 #include <future>
 #include <limits>
 
@@ -70,207 +71,6 @@ void NestedSystemsSolver::fill_rhs()
 {
     for (const auto &coeff : fixed_coefficients) {
         rhs.at(coeff.idx, 0).set(coeff.real, coeff.imag);
-    }
-}
-
-void NestedSystemsSolver::initialize_identity_matrix(flint::Matrix &P)
-{
-    P.zero();
-
-    for (slong i = 0; i < max_system_size; ++i) {
-        P.at(i, i).set(1);
-    }
-}
-
-void NestedSystemsSolver::initialize_base_case(flint::Matrix &L, flint::Matrix &U, flint::Vector &y, flint::Vector &x)
-{
-    L.at(0, 0).set(1.0, 0.0);
-    U.at(0, 0).set(matrix.at(0, 0));
-    flint::div(y[0], rhs.at(0, 0), U.at(0, 0), BYTE_PRECISION);
-    x[0].set(y[0]);
-    solutions.push_back(x);
-}
-
-slong NestedSystemsSolver::find_pivot_index(slong k, const flint::Matrix &matrix)
-{
-    flint::Real pivot, current;
-    
-    flint::abs(pivot, matrix.at(k, k), BYTE_PRECISION);
-    slong pivot_idx = k;
-
-    for (slong i = 0; i < k + 1; ++i) {
-        flint::abs(current, matrix.at(i, k), BYTE_PRECISION);
-        if (current > pivot) {
-            pivot.set(current);
-            pivot_idx = i;
-        }
-    }
-
-    return pivot_idx;
-}
-
-void NestedSystemsSolver::swap_rows(flint::Matrix &matrix, flint::Matrix &rhs, flint::Matrix &L,
-                                    flint::Matrix &P, slong k, slong pivot_idx)
-{
-    flint::Complex temp;
-    
-    if (pivot_idx != k) {
-        for (slong j = 0; j < max_system_size; ++j) {
-            // Swap matrix rows
-            temp.set(matrix.at(k, j));
-            matrix.at(k, j).set(matrix.at(pivot_idx, j));
-            matrix.at(pivot_idx, j).set(temp);
-
-            // Swap L rows
-            temp.set(L.at(k, j));
-            L.at(k, j).set(L.at(pivot_idx, j));
-            L.at(pivot_idx, j).set(temp);
-            
-            // Swap P rows
-            temp.set(P.at(k, j));
-            P.at(k, j).set(P.at(pivot_idx, j));
-            P.at(pivot_idx, j).set(temp);
-        }
-
-        // Swap rhs rows
-        temp.set(rhs.at(k, 0));
-        rhs.at(k, 0).set(rhs.at(pivot_idx, 0));
-        rhs.at(pivot_idx, 0).set(temp);
-    }
-}
-
-void NestedSystemsSolver::compute_u_vector(flint::Vector &u, slong k)
-{
-    for (slong i = 0; i < k; ++i) {
-        u[i].set(matrix.at(i, k));
-    }
-}
-
-void NestedSystemsSolver::compute_w_vector(flint::Vector &w, const flint::Vector &u,
-                                           const flint::Matrix &L, slong k)
-{
-    flint::Complex temp, temp_sum;
-
-    for (slong i = 0; i < k; ++i) {
-        temp_sum.zero();
-        for (slong j = 0; j < i; ++j) {
-            flint::mul(temp, L.at(i, j), w[j], BYTE_PRECISION);
-            flint::add(temp_sum, temp_sum, temp, BYTE_PRECISION);
-        }
-        flint::sub(w[i], u[i], temp_sum, BYTE_PRECISION);
-    }
-}
-
-void NestedSystemsSolver::compute_v_vector(flint::Vector &v, slong k)
-{
-    for (slong i = 0; i < k; ++i) {
-        matrix.at(k, i).set(v[i]);
-    }
-}
-
-void NestedSystemsSolver::compute_l_vector(flint::Vector &l, const flint::Vector &v,
-                                           const flint::Matrix &U, slong k)
-{
-    flint::Complex temp, temp_sum;
-
-    for (slong i = k - 1; i >= 0; --i) {
-        temp_sum.zero();
-        for (slong j = i + 1; j < k; ++j) {
-            flint::mul(temp, U.at(i, j), l[j], BYTE_PRECISION);
-            flint::add(temp_sum, temp_sum, temp, BYTE_PRECISION);
-        }
-        flint::sub(l[i], v[i], temp_sum, BYTE_PRECISION);
-        flint::div(l[i], l[i], U.at(i, i), BYTE_PRECISION);
-    }
-}
-
-void NestedSystemsSolver::compute_s(flint::Complex &s, const flint::Vector &l, const flint::Vector &w, slong k)
-{
-    flint::Complex temp_dot;
-    dot_product(temp_dot, l, w);
-    flint::sub(s, matrix.at(k, k), temp_dot, BYTE_PRECISION);
-}
-
-void NestedSystemsSolver::update_LU_matrices(flint::Matrix &L, flint::Matrix &U, const flint::Vector &l,
-                                             const flint::Vector &w, const flint::Complex &s, slong k)
-{
-    for (slong i = 0; i < k; ++i) {
-        L.at(k, i).set(l[i]);
-        U.at(i, k).set(w[i]);
-    }
-
-    L.at(k, k).set(1.0, 0.0);
-    U.at(k, k).set(s);
-}
-
-void NestedSystemsSolver::solve_forward_substitution(flint::Vector &y, const flint::Matrix &L,
-                                                     const flint::Matrix &rhs, slong size)
-{
-    flint::Complex temp, temp_sum;
-
-    for (slong i = 0; i < size; ++i) {
-        temp_sum.zero();
-        for (slong j = 0; j < i; ++j) {
-            flint::mul(temp, L.at(i, j), y[j], BYTE_PRECISION);
-            flint::add(temp_sum, temp_sum, temp, BYTE_PRECISION);
-        }
-        flint::sub(y[i], rhs.at(i, 0), temp_sum, BYTE_PRECISION);
-    }
-}
-
-void NestedSystemsSolver::solve_backward_substitution(flint::Vector &x, const flint::Vector &y,
-                                                      const flint::Matrix &U, slong size)
-{
-    flint::Complex temp, temp_sum;
-
-    for (slong i = size - 1; i >= 0; --i) {
-        temp_sum.zero();
-        for (slong j = i + 1; j < size; ++j) {
-            flint::mul(temp, U.at(i, j), x[j], BYTE_PRECISION);
-            flint::add(temp_sum, temp_sum, temp, BYTE_PRECISION);
-        }
-        flint::sub(x[i], y[i], temp_sum, BYTE_PRECISION);
-        flint::div(x[i], x[i], U.at(i, i), BYTE_PRECISION);
-    }
-}
-
-void NestedSystemsSolver::lu_solve_all()
-{
-    fill_matrix();
-    fill_rhs();
-
-    flint::Matrix L(max_system_size, max_system_size);
-    flint::Matrix U(max_system_size, max_system_size);
-    flint::Matrix P(max_system_size, max_system_size);
-
-    flint::Vector x(1), y(1);
-    initialize_identity_matrix(P);
-    initialize_base_case(L, U, x, y);
-
-    for (slong size = 2; size <= max_system_size; ++size) {
-        slong k = size - 1;
-
-        // Pivoting
-        slong pivot_idx = find_pivot_index(k, matrix);
-        swap_rows(matrix, rhs, L, P, k, pivot_idx);
-
-        // LU decomposition
-        flint::Vector u(k), w(k), v(k), l(k);
-        compute_u_vector(u, k);
-        compute_w_vector(w, u, L, k);
-        compute_v_vector(v, k);
-        compute_l_vector(l, v, U, k);
-
-        flint::Complex s;
-        compute_s(s, l, w, k);
-        update_LU_matrices(L, U, l, w, s, k);
-
-        // Solve system
-        flint::Vector y(size), x(size);
-        solve_forward_substitution(y, L, rhs, size);
-        solve_backward_substitution(x, y, U, size);
-
-        solutions.push_back(x);
     }
 }
 
@@ -432,5 +232,103 @@ void NestedSystemsSolver::slow_solve_all()
 
     for (auto &f : futures) {
         solutions.push_back(f.get());
+    }
+}
+
+void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal)
+{
+    for (slong i = 0; i < max_system_size; ++i)
+    {
+        flint::Complex diag_temp = matrix.at(i, i);
+        if (i != 0)
+        {
+            flint::mul(diag_temp, diag_temp, diagonal[i-1], BYTE_PRECISION);
+        }
+        diagonal[i].set(diag_temp);
+
+        for (slong j = i + 1; j < max_system_size; ++j)
+        {
+            flint::Complex temp;
+            flint::div(temp, matrix.at(j, i), diag_temp, BYTE_PRECISION);
+            flint::neg(temp, temp);
+            L.at(j, i).set(temp);
+            matrix.at(j, i).set(temp);
+
+            for (slong k = i + 1; k < max_system_size; ++k)
+            {
+                flint::Complex temp_mul;
+                flint::mul(temp_mul, matrix.at(i, k), matrix.at(j, i), BYTE_PRECISION);
+                flint::add(matrix.at(j, k), matrix.at(j, k), temp_mul, BYTE_PRECISION);
+                L.at(j, k).set(matrix.at(j, k));
+            }
+        }
+
+    }
+
+    for (slong i = 0; i < max_system_size; ++i)
+    {
+        for (slong j = i + 1; j < max_system_size; ++j)
+        {
+            for (slong k = j + 1; k < max_system_size; ++k)
+            {   
+                flint::Complex temp_mull_add;
+                flint::mul(temp_mull_add, L.at(i, k), L.at(j, i), BYTE_PRECISION);
+                flint::add(L.at(j, k), L.at(j, k), temp_mull_add, BYTE_PRECISION);
+            }
+        }
+    }
+}
+
+// FIX ME: double free somewhere??
+void NestedSystemsSolver::optimized_lu_solve_all()
+{
+    fill_matrix();
+    fill_rhs();
+
+    flint::Matrix L(max_system_size, max_system_size);
+    flint::Vector diagonal(max_system_size + 2);
+    
+    compute_lu_decomposition(L, diagonal);
+
+    for (slong current_system_size = 1; current_system_size <= max_system_size; ++current_system_size)
+    {
+        flint::Matrix current_solution(current_system_size + 1, current_system_size + 1);
+        flint::Vector inverse(current_system_size + 2);
+
+        for (slong j = 1; j <= current_system_size; ++j)
+        {
+            for (slong k = 1; k <= j; ++k)
+            {
+                flint::Complex temp = L.at(j - 1, k - 1);
+                if (j > 1)
+                {
+                    flint::mul(temp, temp, diagonal[j - 2], BYTE_PRECISION);
+                }
+                current_solution.at(j, k).set(temp);
+            }
+            if (j > 1)
+            {
+                current_solution.at(j, j) = diagonal[j - 1];
+            }
+            current_solution.at(j, j) = 1.0;
+
+            flint::Complex temp_div = 1.0;
+            flint::div(temp_div, temp_div, current_solution.at(j, 1), BYTE_PRECISION);
+            inverse[j] = temp_div;
+            
+            for (slong k = 1; k <= j; ++k)
+            {
+                flint::mul(current_solution.at(j, k), current_solution.at(j, k), inverse[j], BYTE_PRECISION);
+            }
+        }
+
+        flint::Vector res(current_system_size);
+
+        for (slong i = 1; i <= current_system_size; ++i)
+        {
+            res[i] = current_solution.at(current_system_size, i);
+        }
+
+        solutions.push_back(res);
     }
 }

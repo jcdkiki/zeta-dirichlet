@@ -67,7 +67,7 @@ class Matrix {
 };
 
 Vector matrix_vector_multiply(const Matrix &M, const Vector &v,
-                              mp_limb_signed_t precision);
+                              slong precision);
 } // namespace flint
 
 #endif
