@@ -1,19 +1,17 @@
 #ifndef DIRICHLET_SERIES_HPP
 #define DIRICHLET_SERIES_HPP
 
-#include <acb_wrappers/vector.hpp>
+#include <flint_wrappers/vector.hpp>
 
-class DirichletSeries
-{
-private:
-    acb::Vector coefficients;
-    acb_t pow, base, exp;
+class DirichletSeries {
+  private:
+    flint::Vector  coefficients;
+    flint::Complex pow, base, exp;
 
-public:
-    DirichletSeries(acb::Vector& series_coefs);
-    ~DirichletSeries();
+  public:
+    DirichletSeries(flint::Vector &coefficients) : coefficients(coefficients) {}
 
-    void calculate(acb_t result, acb_t X, slong precision);
+    void calculate(flint::Complex &result, const flint::Complex &X, slong precision);
 };
 
 #endif

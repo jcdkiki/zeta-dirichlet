@@ -6,11 +6,15 @@
 
 class ZetaException : std::exception {
     std::string str;
-public:
+
+  public:
     ZetaException(const char *str) : str(str) {}
     ZetaException(const std::string &str) : str(str) {}
 
-    const char *what() const noexcept { return str.data(); }
+    const char *what() const noexcept
+    {
+        return str.data();
+    }
 };
 
 #endif
