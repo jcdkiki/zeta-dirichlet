@@ -2,6 +2,8 @@
 
 ## Сборка проекта
 
+### Под Linux:
+
 Зависимости:
 * Flint 3
 * CMake
@@ -20,6 +22,15 @@ mkdir build
 cd build
 cmake ../
 cmake --build .
+```
+
+### Кросс-компилция под Windows:
+
+Требуется тулчейн mingw-w64-x86-64.
+
+```sh
+cmake -DCMAKE_TOOLCHAIN_FILE=mingw64.cmake -B build-win64 -S .
+cd build-win64 && make -j $(nproc)
 ```
 
 ## Сборка конспекта лекций

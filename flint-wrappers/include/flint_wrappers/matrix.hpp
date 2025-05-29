@@ -66,8 +66,7 @@ class Matrix {
     friend void mul(Vector &result, const Vector &v);
 };
 
-Vector matrix_vector_multiply(const Matrix &M, const Vector &v,
-                              mp_limb_signed_t precision);
+void mul(Vector &result, const Matrix &M, const Vector &v, slong precision);
 } // namespace flint
 
 #endif

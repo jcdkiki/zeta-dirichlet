@@ -10,7 +10,7 @@ struct Vec2d {
 };
 
 class PlotPanel : public wxGLCanvas {
-  protected:
+protected:
     wxGLContext context;
 
     bool is_dragging = false;
@@ -34,8 +34,8 @@ class PlotPanel : public wxGLCanvas {
     void MouseDown(wxMouseEvent &event);
     void MouseReleased(wxMouseEvent &event);
 
-  public:
-    PlotPanel(wxWindow *parent, const int *args);
+public:
+    PlotPanel(wxWindow *parent);
 
     DECLARE_EVENT_TABLE()
 };
@@ -45,8 +45,8 @@ class CoefficientsPlotPanel : public PlotPanel {
 
     void RenderData();
 
-  public:
-    CoefficientsPlotPanel(wxWindow *parent, const int *args) : PlotPanel(parent, args) {}
+public:
+    CoefficientsPlotPanel(wxWindow *parent) : PlotPanel(parent) {}
 
     void FitPlot();
     void SetCoefficients(const std::vector<double> &coefficients)
@@ -56,20 +56,18 @@ class CoefficientsPlotPanel : public PlotPanel {
     virtual ~CoefficientsPlotPanel() = default;
 };
 
-class DynamicPlotPanel : public PlotPanel {
-  public:
-    DynamicPlotPanel(wxWindow *parent, const int *args)
-        : PlotPanel(parent, args), func(nullptr), user_ptr(nullptr)
-    {
-    }
+class SeriesPlotPanel : public PlotPanel {
+public:
+    SeriesPlotPanel(wxWindow *parent)
+        : PlotPanel(parent)
+    {}
 
-    typedef double (*Func)(double x, void *user_ptr);
-    Func func;
-    void *user_ptr;
+    void SetCoefficients(const flint::Vector &coeffs);
+    virtual ~SeriesPlotPanel() = default;
 
-    virtual ~DynamicPlotPanel() = default;
-
-  private:
+private:
+    flint::Vector coeffs;
+    flint::Vector bases;
     void RenderData();
 };
 

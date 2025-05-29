@@ -1,6 +1,7 @@
 #include "flint_wrappers/vector.hpp"
 #include "flint_wrappers/common.hpp"
 #include "flint_wrappers/complex.hpp"
+#include <flint/acb.h>
 
 // TODO: hmmmmmm
 static constexpr int BYTE_PRECISION = 2048;
@@ -70,50 +71,21 @@ Vector::~Vector()
     }
 }
 
-void dot_product(Complex &res, const Vector &v1, const Vector &v2)
+void dot(Complex &res, const Vector &v1, const Vector &v2, slong precision)
 {
+#ifdef DEBUG
     if (v1.size() != v2.size()) {
         throw FlintException("Vectors must be of the same size");
     }
+#endif
 
-    res = 0;
+    Complex temp;
+    
+    res.zero();
     for (slong i = 0; i < v1.size(); i++) {
-        Complex temp;
-        mul(temp, v1[i], v2[i], BYTE_PRECISION);
-        add(res, res, temp, BYTE_PRECISION);
+        mul(temp, v1[i], v2[i], precision);
+        add(res, res, temp, precision);
     }
 }
 
-void vector_norm(Complex &norm, const Vector &v)
-{
-    Complex dot;
-    dot_product(dot, v, v);
-    sqrt(norm, dot, BYTE_PRECISION);
-}
-
-Vector subtract_vectors(const Vector &v1, const Vector &v2)
-{
-    if (v1.size() != v2.size()) {
-        throw FlintException("Vectors must be of the same size");
-    }
-
-    Vector result(v1.size());
-
-    for (slong i = 0; i < v1.size(); i++) {
-        sub(result[i], v1[i], v2[i], BYTE_PRECISION);
-    }
-
-    return result;
-}
-
-Vector scalar_multiply(const Vector &v, const Complex &scalar)
-{
-    Vector result(v.size());
-
-    for (slong i = 0; i < v.size(); i++) {
-        mul(result[i], v[i], scalar, BYTE_PRECISION);
-    }
-
-    return result;
-}
 } // namespace flint

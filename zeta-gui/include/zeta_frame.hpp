@@ -24,7 +24,7 @@ class ZetaFrame : public wxFrame {
 
     CoefficientsPlotPanel *coefficients_plot;
     CoefficientsPlotPanel *errors_plot;
-    DynamicPlotPanel *series_plot;
+    SeriesPlotPanel *series_plot;
 
     std::map<int, flint::Vector> acb_coefficients;
     std::map<int, std::vector<double>> coefficients;
