@@ -271,9 +271,9 @@ void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vect
         {
             for (slong k = j + 1; k < max_system_size; ++k)
             {   
-                flint::Complex temp_mull_add;
-                flint::mul(temp_mull_add, L.at(i, k), L.at(j, i), BYTE_PRECISION);
-                flint::add(L.at(j, k), L.at(j, k), temp_mull_add, BYTE_PRECISION);
+                flint::Complex temp_mul_add;
+                flint::mul(temp_mul_add, L.at(i, k), L.at(j, i), BYTE_PRECISION);
+                flint::add(L.at(j, k), L.at(j, k), temp_mul_add, BYTE_PRECISION);
             }
         }
     }
