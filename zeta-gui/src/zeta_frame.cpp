@@ -1,6 +1,6 @@
+#include <GL/gl.h>
 #include "zeta_frame.hpp"
-#include "dirichlet_series.hpp"
-#include "flint_wrappers/complex.hpp"
+#include "flint_wrappers/vector.hpp"
 #include "nested_systems_solver.hpp"
 #include "plot_panel.hpp"
 #include "reader.hpp"
@@ -38,9 +38,9 @@ ZetaFrame::ZetaFrame()
                                          wxDefaultSize, wxSP_ARROW_KEYS, 1, INT_MAX, 2048);
 
     choicebook = new wxChoicebook(this, wxID_ANY);
-    coefficients_plot = new CoefficientsPlotPanel(choicebook, nullptr);
-    errors_plot = new CoefficientsPlotPanel(choicebook, nullptr);
-    series_plot = new DynamicPlotPanel(choicebook, nullptr);
+    coefficients_plot = new CoefficientsPlotPanel(choicebook);
+    errors_plot = new CoefficientsPlotPanel(choicebook);
+    series_plot = new SeriesPlotPanel(choicebook);
     choicebook->AddPage(coefficients_plot, "Coefficients");
     choicebook->AddPage(errors_plot, "Errors");
     choicebook->AddPage(series_plot, "Series");
@@ -66,13 +66,6 @@ ZetaFrame::ZetaFrame()
     sizer->Add(fit_button, wxGBPosition(2, 1), wxDefaultSpan);
 
     SetSizerAndFit(sizer);
-}
-
-double GetSeriesY(double x, DirichletSeries *series)
-{
-    flint::Complex X(x), Y;
-    series->calculate(Y, X, 2048);
-    return arf_get_d(&Y.real().mid(), ARF_RND_NEAR);
 }
 
 void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
@@ -139,12 +132,7 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
         coeffs_choice->SetSelection(coeffs_choice->GetCount() - 1);
         coefficients_plot->SetCoefficients(coefficients.rbegin()->second);
         errors_plot->SetCoefficients(errors.rbegin()->second);
-
-        if (series_plot->user_ptr != nullptr) {
-            delete ((DirichletSeries *)series_plot->user_ptr);
-        }
-        series_plot->user_ptr = new DirichletSeries(acb_coefficients.rbegin()->second);
-        series_plot->func = (DynamicPlotPanel::Func)GetSeriesY;
+        series_plot->SetCoefficients(acb_coefficients.rbegin()->second);
     }
     catch (std::exception &e) {
         SetStatusText(e.what());
@@ -156,16 +144,11 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
 
 void ZetaFrame::OnCoeffsChoice(wxCommandEvent &event)
 {
-    if (series_plot->user_ptr != nullptr) {
-        delete (DirichletSeries *)series_plot->user_ptr;
-    }
-
     int selection = event.GetSelection();
     if (selection == 0) {
         coefficients_plot->SetCoefficients(std::vector<double>());
         errors_plot->SetCoefficients(std::vector<double>());
-
-        series_plot->func = nullptr;
+        series_plot->SetCoefficients(flint::Vector());
         return;
     }
 
@@ -174,8 +157,7 @@ void ZetaFrame::OnCoeffsChoice(wxCommandEvent &event)
 
     coefficients_plot->SetCoefficients(coefficients[n_zeros]);
     errors_plot->SetCoefficients(errors[n_zeros]);
-    series_plot->user_ptr = new DirichletSeries(acb_coefficients[n_zeros]);
-    series_plot->func = (DynamicPlotPanel::Func)GetSeriesY;
+    series_plot->SetCoefficients(acb_coefficients[n_zeros]);
 }
 
 void ZetaFrame::OnFitButton(wxCommandEvent &event)

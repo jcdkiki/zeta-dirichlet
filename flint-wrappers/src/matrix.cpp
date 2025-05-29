@@ -66,27 +66,24 @@ std::ostream &operator<<(std::ostream &os, const Matrix &mat)
     return os;
 }
 
-Vector matrix_vector_multiply(const Matrix &M, const Vector &v, mp_limb_signed_t precision)
+void mul(Vector &result, const Matrix &M, const Vector &v, slong precision)
 {
+#ifdef DEBUG
     if (M.ncols() != v.size()) {
         throw std::invalid_argument("Matrix columns must match vector size");
     }
+#endif
 
-    Vector result(M.nrows());
+    result = Vector(M.nrows());
 
     for (slong i = 0; i < M.nrows(); i++) {
-        Complex dot;
-
+        Complex &dot = result[i];
         for (slong j = 0; j < M.ncols(); j++) {
             Complex temp;
             mul(temp, M.at(i, j), v[j], precision);
             add(dot, dot, temp, precision);
         }
-
-        result[i] = dot;
     }
-
-    return result;
 }
 
 } // namespace flint

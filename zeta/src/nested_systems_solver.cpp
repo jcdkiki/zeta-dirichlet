@@ -1,7 +1,6 @@
 #include "nested_systems_solver.hpp"
 #include "common.hpp"
-#include "flint_wrappers/matrix.hpp"
-#include <future>
+#include <flint_wrappers/matrix.hpp>
 #include <limits>
 
 // TODO: fix meeeee
@@ -391,21 +390,14 @@ void NestedSystemsSolver::qr_solve_all()
 {
     fill_matrix();
     fill_rhs();
-    std::vector<std::future<flint::Vector>> futures;
-
+    
     flint::Vector temp_rhs(rhs[0]->get(), max_system_size);
 
     for (slong k = 1; k <= max_system_size; k++) {
-        futures.emplace_back(std::async(std::launch::async, [&, k]() {
             flint::Matrix A_k(k, k);
             flint::Vector b_k(k);
             prepare_subsystem(A_k, b_k, matrix, temp_rhs, k);
-            return qr_solve_system(A_k, b_k);
-        }));
-    }
-
-    for (auto &f : futures) {
-        solutions.push_back(f.get());
+            solutions.push_back(qr_solve_system(A_k, b_k));
     }
 }
 
@@ -414,24 +406,18 @@ void NestedSystemsSolver::slow_solve_all()
     fill_matrix();
     fill_rhs();
 
-    std::vector<std::future<flint::Vector>> futures;
     flint::Vector temp_rhs(rhs[0]->get(), max_system_size);
 
     for (slong k = 1; k <= max_system_size; k++) {
-        futures.emplace_back(std::async(std::launch::async, [&, k]() {
-            flint::Matrix x(k, 1);
-            flint::Matrix A_k(k, k);
-            flint::Vector b_k(k);
-            prepare_subsystem(A_k, b_k, matrix, temp_rhs, k);
+        flint::Matrix x(k, 1);
+        flint::Matrix A_k(k, k);
+        flint::Vector b_k(k);
+        prepare_subsystem(A_k, b_k, matrix, temp_rhs, k);
 
-            flint::Matrix b_k_temp(b_k);
-            acb_mat_solve(x.get(), A_k.get(), b_k_temp.get(), precision);
+        flint::Matrix b_k_temp(b_k);
+        acb_mat_solve(x.get(), A_k.get(), b_k_temp.get(), precision);
 
-            return flint::Vector(x[0]->get(), k);
-        }));
-    }
 
-    for (auto &f : futures) {
-        solutions.push_back(f.get());
+        solutions.push_back(flint::Vector(x[0]->get(), k));
     }
 }
