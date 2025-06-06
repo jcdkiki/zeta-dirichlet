@@ -19,6 +19,7 @@ class NestedSystemsSolver {
     slong                           precision;
 
     void fill_matrix();
+    void fill_matrix_nofix();
     void fill_rhs();
 
     // lu funcs
