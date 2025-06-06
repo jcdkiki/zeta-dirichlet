@@ -24,6 +24,9 @@ ZetaFrame::ZetaFrame()
 {
     CreateStatusBar();
     SetStatusText("Welcome to zeta-dirichlet!");
+#ifdef ZETA_WIN32
+    SetIcon(wxICON(APPICON));
+#endif
 
     wxGridBagSizer *sizer = new wxGridBagSizer();
 

@@ -29,7 +29,7 @@ cmake --build .
 Требуется тулчейн mingw-w64-x86-64.
 
 ```sh
-cmake -DCMAKE_TOOLCHAIN_FILE=mingw64.cmake -B build-win64 -S .
+cmake -DCMAKE_TOOLCHAIN_FILE=mingw64.cmake -DCMAKE_BUILD_TYPE=Release -B build-win64 -S .
 cd build-win64 && make -j $(nproc)
 ```
 

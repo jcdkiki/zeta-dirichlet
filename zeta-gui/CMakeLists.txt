@@ -1,12 +1,3 @@
-set(OpenGL_GL_PREFERENCE GLVND)
-find_package(OpenGL REQUIRED)
-
-find_package(wxWidgets COMPONENTS core base gl REQUIRED)
-
-if(${wxWidgets_USE_FILE})
-    include(${wxWidgets_USE_FILE})
-endif()
-
 if(WIN32)
     set(RC_FILE "src/resources.rc")
 else()
@@ -21,13 +12,17 @@ add_executable(zeta-gui
     ${RC_FILE}
 )
 
-if(WXWIDGETS_NEEDS_BUILD)
-    add_dependencies(zeta-gui wxwidgets)
-endif()
-
-target_include_directories(zeta-gui PRIVATE include)
-target_link_libraries(zeta-gui PRIVATE wxWidgets::wxWidgets ${MPFR_LIBRARY} ${FLINT_LIBRARY} ${GMP_LIBRARY} OpenGL::GL zeta)
+target_include_directories(zeta-gui PRIVATE include ${wxWidgets_INCLUDE_DIRS})
+target_link_libraries(zeta-gui PRIVATE ${wxWidgets_LIBRARIES}  OpenGL::GL zeta)
 
 if (WIN32)
+    target_compile_definitions(zeta-gui PRIVATE ZETA_WIN32)
+    target_link_options(zeta-gui PRIVATE -mwindows)
     target_link_libraries(zeta-gui PRIVATE -lpthread -static)
 endif()
+
+add_custom_target(pack_7z
+    COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/zeta-gui.7z" --format=7zip "$<TARGET_FILE:zeta-gui>"
+    DEPENDS zeta-gui
+    COMMENT "Creating 7z archive of zeta-gui"
+)
