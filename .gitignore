@@ -1,5 +1,7 @@
-docs/*.pdf
+.cache
 .vscode
 build
+build-win64
+mingw64
+docs/*.pdf
 zeros.val
-.cache

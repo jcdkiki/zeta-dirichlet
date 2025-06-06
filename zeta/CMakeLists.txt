@@ -1,5 +1,4 @@
-add_library(zeta
-    src/dirichlet_series.cpp
+add_library(zeta STATIC
     src/nested_systems_solver.cpp
     src/reader.cpp
 )

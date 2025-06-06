@@ -2,8 +2,6 @@
 
 #include <GL/gl.h>
 #include <algorithm>
-#include <cfloat>
-#include <flint/mag.h>
 #include <wx/colour.h>
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
@@ -78,8 +76,13 @@ void PlotPanel::MouseWheelMoved(wxMouseEvent &event)
 static constexpr int WINDOW_WIDTH = 640;
 static constexpr int WINDOW_HEIGHT = 480;
 
-PlotPanel::PlotPanel(wxWindow *parent, const int *args)
-    : wxGLCanvas(parent, wxID_ANY, args, wxDefaultPosition, wxSize(WINDOW_WIDTH, WINDOW_HEIGHT),
+static const int GL_ATTRIBS[] = {
+    WX_GL_SAMPLES, 4,
+    0
+};
+
+PlotPanel::PlotPanel(wxWindow *parent)
+    : wxGLCanvas(parent, wxID_ANY, GL_ATTRIBS, wxDefaultPosition, wxSize(WINDOW_WIDTH, WINDOW_HEIGHT),
                  wxFULL_REPAINT_ON_RESIZE),
       context(this)
 {
@@ -205,7 +208,10 @@ void PlotPanel::Render(wxPaintEvent &evt)
 
     wxPaintDC dc(this);
     wxGLCanvas::SetCurrent(context);
-
+    
+    //glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+    glEnable(GL_LINE_SMOOTH);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     wxColour bg_col = *wxWHITE;
@@ -278,23 +284,53 @@ void CoefficientsPlotPanel::FitPlot()
     Refresh();
 }
 
-void DynamicPlotPanel::RenderData()
+void SeriesPlotPanel::SetCoefficients(const flint::Vector &coeffs)
 {
-    if (func == nullptr) {
+    this->coeffs = coeffs;
+
+    bases = flint::Vector(coeffs.size());
+    for (int i = 0; i < coeffs.size(); i++) {
+        bases[i].set((double)(i + 1));
+    }
+}
+
+static constexpr int BYTE_PRECISION = 256;
+
+void SeriesPlotPanel::RenderData()
+{
+    if (coeffs.size() == 0) {
         return;
     }
 
+    double scale = ldexpl(1, ilogb(zoom));
+    double x_step = 5.f / zoom;
     double x_min = ScreenToSpaceCoord({0, 0}).x;
     double x_max = ScreenToSpaceCoord({WINDOW_WIDTH, 0}).x;
-    double x_step = ScreenToSpaceCoord({5.f, 0}).x - ScreenToSpaceCoord({0, 0}).x;
+
+    x_min = floor(x_min / x_step) * x_step;
+    int n = ceil((x_max - x_min) / x_step);
 
     glColor3ub(LINE_COLOR.r, LINE_COLOR.g, LINE_COLOR.b);
     glLineWidth(2.0);
 
+    flint::Complex result;
+    flint::Complex tmp;
+    flint::Complex cur_x(x_min);
+    flint::Complex step(x_step);
+    cur_x.neg();
+
     glBegin(GL_LINE_STRIP);
-    for (double x = x_min; x < x_max; x += x_step) {
-        Vec2d coord = SpaceToScreenCoord({x, func(x, user_ptr)});
-        glVertex2d(coord.x, coord.y);
+    for (int i = 0; i < n; i++) {
+        result.zero();
+        for (int i = 0; i < coeffs.size(); i++) {
+            flint::pow(tmp, bases[i], cur_x, BYTE_PRECISION);
+            flint::mul(tmp, tmp, coeffs[i], BYTE_PRECISION);
+            flint::add(result, result, tmp, BYTE_PRECISION);
+        }
+
+        flint::sub(cur_x, cur_x, step, BYTE_PRECISION);
+        Vec2d pos = SpaceToScreenCoord({ x_min + i*x_step, arf_get_d(&result.get()->real.mid, ARF_RND_NEAR) });
+        glVertex2d(pos.x, pos.y);
     }
     glEnd();
 }

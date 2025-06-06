@@ -9,8 +9,19 @@ add_library(flint_wrappers
     include/flint_wrappers/vector.hpp
 )
 
-find_package(PkgConfig)
-pkg_search_module(FLINT REQUIRED flint)
+if(WIN32)
+    add_dependencies(flint_wrappers gmp)
+    add_dependencies(flint_wrappers mpfr)
+    add_dependencies(flint_wrappers flint)
+endif()
 
-target_include_directories(flint_wrappers PUBLIC include)
-target_link_libraries(flint_wrappers PUBLIC flint)
+target_include_directories(flint_wrappers PUBLIC include ${FLINT_INCLUDE_DIRS})
+target_link_libraries(flint_wrappers PUBLIC ${FLINT_LIBRARIES})
+
+if(WIN32)
+    target_link_libraries(flint_wrappers PUBLIC -lpthread -static)
+endif()
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    add_compile_definitions(DEBUG)
+endif()

@@ -2,6 +2,8 @@
 #define FLINT_WRAPPERS_VECTOR_HPP
 
 #include "flint_wrappers/complex.hpp"
+#include "flint_wrappers/common.hpp"
+#include <flint/acb.h>
 #include <flint/flint.h>
 
 namespace flint {
@@ -41,10 +43,34 @@ class Vector {
     ~Vector();
 };
 
-void dot_product(Complex &res, const Vector &v1, const Vector &v2);
-void vector_norm(Complex &norm, const Vector &v);
-Vector subtract_vectors(const Vector &v1, const Vector &v2);
-Vector scalar_multiply(const Vector &v, const Complex &scalar);
+void dot(Complex &res, const Vector &v1, const Vector &v2, slong precision);
+
+inline void norm(Complex &res, const Vector &vec, slong precision)
+{
+    dot(res, vec, vec, precision);
+    sqrt(res, res, precision);
+}
+
+inline void mul(Vector &result, const Vector &vec, const Complex &scalar, slong precision)
+{
+#ifdef DEBUG
+    if (result.size() != vec.size()) {
+        throw FlintException("Vectors must be of the same size");
+    }
+#endif
+    _acb_vec_scalar_mul(result.data(), vec.data(), result.size(), scalar.get(), precision);
+}
+
+inline void sub(Vector &result, const Vector &left, const Vector &right, slong precision)
+{
+#ifdef DEBUG
+    if (left.size() != right.size() || result.size() != left.size()) {
+        throw FlintException("Vectors must be of the same size");
+    }
+#endif
+    _acb_vec_sub(result.data(), left.data(), right.data(), left.size(), precision);
+}
+
 } // namespace flint
 
 #endif
