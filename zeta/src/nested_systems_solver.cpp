@@ -24,7 +24,7 @@ flint::Vector &NestedSystemsSolver::get_coefs_vector(int idx)
 void NestedSystemsSolver::fill_matrix_nofix()
 {
     flint::Complex base, exp, res;
-    for (slong i = 0; i < max_system_size - 1; ++i) 
+    for (slong i = 0; i < max_system_size; ++i) 
     {
         for (slong j = 0; j < max_system_size; ++j) 
         {
@@ -32,15 +32,9 @@ void NestedSystemsSolver::fill_matrix_nofix()
             exp.set(zeros[i]);                      // exp = zeros[zero_ptr]
             exp.neg();                              // exp = -exp
             flint::pow(res, base, exp, precision);  // res = base^-exp            
-            matrix.at(i, j).set(res);
+            matrix.at(j, i).set(res);
         }
     }
-
-    for (slong j = 0; j < max_system_size; ++j) 
-    {
-        matrix.at(max_system_size - 1, j).zero();             
-    }
-    matrix.at(max_system_size - 1, 0).one();
 }
 
 void NestedSystemsSolver::fill_matrix()
@@ -259,80 +253,98 @@ void NestedSystemsSolver::slow_solve_all()
 void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal) {
     flint::Complex temp;
 
-    for (slong i = 0; i < max_system_size; ++i) {
-        acb_set(temp.get(), matrix.at(i, i).get());
-        if (i > 0) {
-            acb_mul(temp.get(), temp.get(), diagonal[i-1].get(), BYTE_PRECISION);
+    flint::Vector diag(max_system_size + 1);
+
+    for (slong i = 0; i < max_system_size; ++i) 
+    {
+        diag[i].set(matrix.at(i, i));
+        diagonal[i].set(diag[i]);
+
+        if (i > 0)
+        {
+            flint::mul(diagonal[i], diagonal[i], diagonal[i - 1], precision);
         }
-        acb_set(diagonal[i].get(), temp.get());
 
-        for (slong j = i + 1; j < max_system_size; ++j) {
-            acb_div(temp.get(), matrix.at(j, i).get(), diagonal[i].get(), BYTE_PRECISION);
-            acb_neg(temp.get(), temp.get());
-            acb_set(L.at(j, i).get(), temp.get());
-            acb_set(matrix.at(j, i).get(), temp.get());
+        for (slong j = i + 1; j < max_system_size; ++j) 
+        {
+            flint::Complex z;
+            flint::div(z, matrix.at(j, i), diag[i], precision);
+            z.neg();
+            L.at(j, i).set(z);
+            matrix.at(j, i).set(z);
 
-            for (slong k = i + 1; k < max_system_size; ++k) {
-                acb_mul(temp.get(), matrix.at(i, k).get(), matrix.at(j, i).get(), BYTE_PRECISION);
-                acb_add(matrix.at(j, k).get(), matrix.at(j, k).get(), temp.get(), BYTE_PRECISION);
-                acb_set(L.at(j, k).get(), matrix.at(j, k).get());
+            for (slong k = i + 1; k < max_system_size; ++k) 
+            {
+                flint::Complex temp;
+                flint::mul(temp, matrix.at(i, k), matrix.at(j, i), precision);
+                flint::add(matrix.at(j, k), matrix.at(j, k), temp, precision);
+                L.at(j, k).set(matrix.at(j, k));
             }
         }
     }
 
-    for (slong k = 0; k < max_system_size; ++k) {
-        for (slong i = k + 1; i < max_system_size; ++i) {
-            for (slong j = i + 1; j < max_system_size; ++j) {
-                acb_mul(temp.get(), L.at(i, k).get(), L.at(j, i).get(), BYTE_PRECISION);
-                acb_add(L.at(j, k).get(), L.at(j, k).get(), temp.get(), BYTE_PRECISION);
+    for (slong k = 0; k < max_system_size; ++k) 
+    {
+        for (slong i = k + 1; i < max_system_size; ++i) 
+        {
+            for (slong j = i + 1; j < max_system_size; ++j) 
+            {
+                flint::Complex temp;
+                flint::mul(temp, L.at(i, k), matrix.at(j, i), precision);
+                flint::add(L.at(j, k), L.at(j, k), temp, precision);
             }
         }
     }
 }
 
 // FIX ME: something wrong with solution?
-void NestedSystemsSolver::optimized_lu_solve_all() {
+void NestedSystemsSolver::optimized_lu_solve_all() 
+{
     fill_matrix_nofix();
 
     flint::Matrix L(max_system_size, max_system_size);
-    flint::Vector diagonal(max_system_size + 2);
+    flint::Vector diagonal(max_system_size + 1);
     
     compute_lu_decomposition(L, diagonal);
 
-    flint::Complex temp;
+    for (slong current_size = 1; current_size <= max_system_size; ++current_size) 
+    {
+        flint::Matrix current_solution(current_size + 1, current_size + 1);
+        flint::Vector inverse(current_size + 1);
 
-    for (slong current_system_size = 1; current_system_size <= max_system_size; ++current_system_size) {
-        flint::Matrix current_solution(current_system_size + 1, current_system_size + 1);
-        flint::Vector inverse(current_system_size + 2);
-
-        for (slong j = 1; j <= current_system_size; ++j) {
-            for (slong k = 1; k <= j; ++k) {
-                acb_set(temp.get(), L.at(j - 1, k - 1).get());
-                if (j > 1) {
-                    acb_mul(temp.get(), temp.get(), diagonal[j - 2].get(), BYTE_PRECISION);
+        for (slong j = 1; j <= current_size; ++j) 
+        {
+            for (slong k = 1; k < j; ++k) 
+            {
+                current_solution.at(j, k).set(L.at(j - 1, k - 1));
+                if (j > 2)
+                {
+                    flint::mul(current_solution.at(j, k), current_solution.at(j, k), diagonal[j - 2], precision);
                 }
-                acb_set(current_solution.at(j, k).get(), temp.get());
             }
-            if (j > 1) {
-                acb_set(current_solution.at(j, j).get(), diagonal[j - 1].get());
-            } else {
-                acb_set_d(current_solution.at(j, j).get(), 1.0);
+            
+            current_solution.at(j, j).one();
+            if (j > 1)
+            {
+                current_solution.at(j, j).set(diagonal[j - 1]);
             }
 
-            acb_set_d(temp.get(), 1.0);
-            acb_div(temp.get(), temp.get(), current_solution.at(j, 1).get(), BYTE_PRECISION);
-            acb_set(inverse[j].get(), temp.get());
+            flint::Complex temp;
+            temp.one();
+            flint::div(inverse[j], temp, current_solution.at(j, 1), precision);
             
-            for (slong k = 1; k <= j; ++k) {
-                acb_mul(current_solution.at(j, k).get(), current_solution.at(j, k).get(), inverse[j].get(), BYTE_PRECISION);
+            for (slong k = 1; k <= j; ++k) 
+            {
+                flint::mul(current_solution.at(j, k), current_solution.at(j, k), inverse[j], precision);
             }
         }
 
-        flint::Vector res(current_system_size);
+        flint::Vector res(current_size);
 
-        for (slong i = 1; i < current_system_size; ++i) {
-            acb_set(res[i-1].get(), current_solution.at(current_system_size, i).get());
-            acb_printd(current_solution.at(current_system_size, i).get(), 3);
+        for (slong i = 0; i < current_size; ++i) 
+        {
+            res[i].set(current_solution.at(current_size, i + 1));
+            acb_printd(current_solution.at(current_size, i + 1).get(), 3);
             std::cout << std::endl;
         }
 
