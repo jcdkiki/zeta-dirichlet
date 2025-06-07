@@ -9,10 +9,10 @@
 // TODO: fix meeeee
 static constexpr int BYTE_PRECISION = 2048;
 
-NestedSystemsSolver::NestedSystemsSolver(std::vector<coefficient> &fixed_coefs,
+NestedSystemsSolver::NestedSystemsSolver(slong mat_size, std::vector<coefficient> &fixed_coefs,
                                          flint::Vector &zeta_zeros, slong precision)
     : zeros(zeta_zeros), fixed_coefficients(fixed_coefs), precision(precision),
-      matrix(max_system_size, max_system_size), rhs(max_system_size, 1)
+      matrix(mat_size, mat_size), rhs(mat_size, 1), max_system_size(mat_size)
 {
 }
 
@@ -250,7 +250,8 @@ void NestedSystemsSolver::slow_solve_all()
     }
 }
 
-void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal) {
+void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal) 
+{
     flint::Complex temp;
 
     flint::Vector diag(max_system_size + 1);
@@ -297,7 +298,6 @@ void NestedSystemsSolver::compute_lu_decomposition(flint::Matrix &L, flint::Vect
     }
 }
 
-// FIX ME: something wrong with solution?
 void NestedSystemsSolver::optimized_lu_solve_all() 
 {
     fill_matrix_nofix();

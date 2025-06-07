@@ -12,7 +12,7 @@ class NestedSystemsSolver {
   private:
     const std::vector<coefficient> &fixed_coefficients;
     const flint::Vector            &zeros;
-    const slong                     max_system_size = 50;
+    const slong                     max_system_size;
     std::vector<flint::Vector>      solutions;
     flint::Matrix                   matrix;
     flint::Matrix                   rhs;
@@ -35,7 +35,7 @@ class NestedSystemsSolver {
     flint::Vector qr_solve_system(const flint::Matrix &A_k, const flint::Vector &b_k);
 
   public:
-    NestedSystemsSolver(std::vector<coefficient> &fixed_coefs, flint::Vector &zeta_zeros,
+    NestedSystemsSolver(slong mat_size, std::vector<coefficient> &fixed_coefs, flint::Vector &zeta_zeros,
                         slong precision);
     
     void optimized_lu_solve_all();
