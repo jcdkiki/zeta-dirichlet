@@ -209,8 +209,15 @@ void NestedSystemsSolver::qr_solve_all()
 
     flint::Vector temp_rhs(rhs[0]->get(), max_system_size);
 
-    for (slong k = 1; k <= max_system_size; k++) {
-        futures.emplace_back(std::async(std::launch::async, [&, k]() {
+    for (slong k = 1; k <= max_system_size; k++) 
+    {
+        futures.emplace_back(std::async(std::launch::async, [&, k]() 
+        {
+            if (k < 50) precision = 1024;
+            else if (k < 100) precision = 2048;
+            else if (k < 150) precision = 4096;
+            else if (k < 300) precision = 8192;
+            
             flint::Matrix A_k(k, k);
             flint::Vector b_k(k);
             prepare_subsystem(A_k, b_k, matrix, temp_rhs, k);
@@ -232,7 +239,13 @@ void NestedSystemsSolver::slow_solve_all()
     flint::Vector temp_rhs(rhs[0]->get(), max_system_size);
 
     for (slong k = 1; k <= max_system_size; k++) {
-        futures.emplace_back(std::async(std::launch::async, [&, k]() {
+        futures.emplace_back(std::async(std::launch::async, [&, k]() 
+        {
+            if (k < 50) precision = 1024;
+            else if (k < 100) precision = 2048;
+            else if (k < 150) precision = 4096;
+            else if (k < 300) precision = 8192;
+
             flint::Matrix x(k, 1);
             flint::Matrix A_k(k, k);
             flint::Vector b_k(k);
@@ -305,49 +318,63 @@ void NestedSystemsSolver::optimized_lu_solve_all()
     flint::Matrix L(max_system_size, max_system_size);
     flint::Vector diagonal(max_system_size + 1);
     
+    precision = 8192;    
     compute_lu_decomposition(L, diagonal);
+
+    std::vector<std::future<flint::Vector>> futures;
 
     for (slong current_size = 1; current_size <= max_system_size; ++current_size) 
     {
-        flint::Matrix current_solution(current_size + 1, current_size + 1);
-        flint::Vector inverse(current_size + 1);
-
-        for (slong j = 1; j <= current_size; ++j) 
+        futures.emplace_back(std::async(std::launch::async, [this, current_size, &L, &diagonal]() 
         {
-            for (slong k = 1; k < j; ++k) 
+            if (current_size < 50) precision = 1024;
+            else if (current_size < 100) precision = 2048;
+            else if (current_size < 150) precision = 4096;
+            else if (current_size < 300) precision = 8192;
+            
+            flint::Matrix current_solution(current_size + 1, current_size + 1);
+            flint::Vector inverse(current_size + 1);
+
+            for (slong j = 1; j <= current_size; ++j)
             {
-                current_solution.at(j, k).set(L.at(j - 1, k - 1));
-                if (j > 2)
+                for (slong k = 1; k < j; ++k) 
                 {
-                    flint::mul(current_solution.at(j, k), current_solution.at(j, k), diagonal[j - 2], precision);
+                    current_solution.at(j, k).set(L.at(j - 1, k - 1));
+                    if (j > 2)
+                    {
+                        flint::mul(current_solution.at(j, k), current_solution.at(j, k), diagonal[j - 2], precision);
+                    }
+                }
+                
+                current_solution.at(j, j).one();
+                if (j > 1)
+                {
+                    current_solution.at(j, j).set(diagonal[j - 1]);
+                }
+
+                flint::Complex temp;
+                temp.one();
+                flint::div(inverse[j], temp, current_solution.at(j, 1), precision);
+                
+                for (slong k = 1; k <= j; ++k) 
+                {
+                    flint::mul(current_solution.at(j, k), current_solution.at(j, k), inverse[j], precision);
                 }
             }
-            
-            current_solution.at(j, j).one();
-            if (j > 1)
-            {
-                current_solution.at(j, j).set(diagonal[j - 1]);
+
+            flint::Vector res(current_size);
+
+            for (slong i = 0; i < current_size; ++i) 
+            {   
+                res[i].set(current_solution.at(current_size, i + 1));
             }
 
-            flint::Complex temp;
-            temp.one();
-            flint::div(inverse[j], temp, current_solution.at(j, 1), precision);
-            
-            for (slong k = 1; k <= j; ++k) 
-            {
-                flint::mul(current_solution.at(j, k), current_solution.at(j, k), inverse[j], precision);
-            }
-        }
+            return res;
+        }));
+    }
 
-        flint::Vector res(current_size);
-
-        for (slong i = 0; i < current_size; ++i) 
-        {
-            res[i].set(current_solution.at(current_size, i + 1));
-            acb_printd(current_solution.at(current_size, i + 1).get(), 3);
-            std::cout << std::endl;
-        }
-
-        solutions.push_back(std::move(res));
+    for (auto& fut : futures) 
+    {
+        solutions.push_back(fut.get());
     }
 }
