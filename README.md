@@ -4,13 +4,14 @@
 
 ### Под Linux:
 
-Зависимости:
-* Flint 3
-* CMake
-* Make
-* Pkg-config
-* wxWidgets
-* ???
+Зависимости и рекомендуемые версии:
+* Flint 3 - 3.2.2
+* CMake - 3.28.3
+* Make - 4.3
+* Pkg-config - 1.8.1
+* wxWidgets - 3.2.4
+
+Команда для установки всех зависимостей: `sudo apt-get install libflint-dev cmake make pkg-config libwxgtk3.2-dev`
 
 Flint 3 либо устанавливается из менеджера пакетов, либо собирается вручную по
 инструкциям из [репозитория flint](https://github.com/flintlib/flint/tree/flint-3.1).
