@@ -19,7 +19,7 @@ add_executable(zeta-gui
 )
 
 target_include_directories(zeta-gui PRIVATE include ${wxWidgets_INCLUDE_DIRS})
-target_link_libraries(zeta-gui PRIVATE ${wxWidgets_LIBRARIES}  OpenGL::GL zeta)
+target_link_libraries(zeta-gui PRIVATE ${wxWidgets_LIBRARIES} OpenGL::GL zeta)
 
 if (WIN32)
     target_compile_definitions(zeta-gui PRIVATE ZETA_WIN32)

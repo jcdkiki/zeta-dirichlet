@@ -12,40 +12,20 @@ class NestedSystemsSolver {
   private:
     const std::vector<coefficient> &fixed_coefficients;
     const flint::Vector            &zeros;
-    const slong                     max_system_size = zeros.size() + fixed_coefficients.size();
+    const slong                     max_system_size;
     std::vector<flint::Vector>      solutions;
     flint::Matrix                   matrix;
     flint::Matrix                   rhs;
     slong                           precision;
 
     void fill_matrix();
+    void fill_matrix_nofix();
     void fill_rhs();
 
     // lu funcs
-    void initialize_identity_matrix(flint::Matrix &P);
-    void initialize_base_case(flint::Matrix &L, flint::Matrix &U, flint::Vector &y,
-                              flint::Vector &x);
+    void compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal);
 
-    slong find_pivot_index(slong k, const flint::Matrix &matrix);
-
-    void swap_rows(flint::Matrix &matrix, flint::Matrix &rhs, flint::Matrix &L, flint::Matrix &P,
-                   slong k, slong pivot_idx);
-
-    void compute_u_vector(flint::Vector &u, slong k);
-    void compute_w_vector(flint::Vector &w, const flint::Vector &u, const flint::Matrix &L,
-                          slong k);
-    void compute_v_vector(flint::Vector &v, slong k);
-    void compute_l_vector(flint::Vector &l, const flint::Vector &v, const flint::Matrix &U,
-                          slong k);
-    void compute_s(flint::Complex &s, const flint::Vector &l, const flint::Vector &w, slong k);
-
-    void update_LU_matrices(flint::Matrix &L, flint::Matrix &U, const flint::Vector &l,
-                            const flint::Vector &w, const flint::Complex &s, slong k);
-
-    void solve_forward_substitution(flint::Vector &y, const flint::Matrix &L,
-                                    const flint::Matrix &rhs, slong size);
-    void solve_backward_substitution(flint::Vector &x, const flint::Vector &y,
-                                     const flint::Matrix &U, slong size);
+    void foraward_substitution(flint::Matrix &L, flint::Vector &diagonal);
 
     // qr funcs
     void modified_gram_schmidt(flint::Matrix &Q, flint::Matrix &R, const flint::Matrix &A);
@@ -55,10 +35,10 @@ class NestedSystemsSolver {
     flint::Vector qr_solve_system(const flint::Matrix &A_k, const flint::Vector &b_k);
 
   public:
-    NestedSystemsSolver(std::vector<coefficient> &fixed_coefs, flint::Vector &zeta_zeros,
+    NestedSystemsSolver(slong mat_size, std::vector<coefficient> &fixed_coefs, flint::Vector &zeta_zeros,
                         slong precision);
-
-    void lu_solve_all();
+    
+    void optimized_lu_solve_all();
     void qr_solve_all();
     void slow_solve_all();
 

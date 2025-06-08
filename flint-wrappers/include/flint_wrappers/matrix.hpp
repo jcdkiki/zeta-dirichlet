@@ -63,7 +63,7 @@ class Matrix {
 
     friend std::ostream &operator<<(std::ostream &os, const Matrix &mat);
 
-    friend void mul(Vector &result, const Vector &v);
+    // friend void mul(Vector &result, const Vector &v);
 };
 
 void mul(Vector &result, const Matrix &M, const Vector &v, slong precision);
