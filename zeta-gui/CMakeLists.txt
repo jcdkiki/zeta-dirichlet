@@ -8,12 +8,18 @@ add_executable(zeta-gui
     src/main.cpp
     src/plot_panel.cpp
     src/zeta_app.cpp
-    src/zeta_frame.cpp
+    src/zeta_frames.cpp
+    
+    src/zeta_frame_handlers.cpp
+    src/rendering_settings_frame_handlers.cpp
+    src/new_file_frame_handlers.cpp
+
+    src/shared.cpp
     ${RC_FILE}
 )
 
 target_include_directories(zeta-gui PRIVATE include ${wxWidgets_INCLUDE_DIRS})
-target_link_libraries(zeta-gui PRIVATE ${wxWidgets_LIBRARIES}  OpenGL::GL zeta)
+target_link_libraries(zeta-gui PRIVATE ${wxWidgets_LIBRARIES} OpenGL::GL zeta)
 
 if (WIN32)
     target_compile_definitions(zeta-gui PRIVATE ZETA_WIN32)

@@ -15,9 +15,6 @@ protected:
 
     bool is_dragging = false;
     wxPoint drag_position;
-    Vec2d pos = {0.0, 0.0};
-    double zoom = 5.0;
-    double y_zoom = 5.0;
 
     Vec2d SpaceToScreenCoord(Vec2d vec);
     Vec2d ScreenToSpaceCoord(Vec2d vec);
@@ -35,38 +32,55 @@ protected:
     void MouseReleased(wxMouseEvent &event);
 
 public:
-    PlotPanel(wxWindow *parent);
+    PlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags);
+
+    Vec2d pos = {0.0, 0.0};
+    double zoom = 5.0;
+    double y_zoom = 5.0;
+
+    void EnableMultisampling();
+    void DisableMultisampling();
 
     DECLARE_EVENT_TABLE()
 };
 
-class CoefficientsPlotPanel : public PlotPanel {
-    std::vector<double> coefficients;
+class PointsPlotPanel : public PlotPanel {
+    virtual size_t GetPointsCount() = 0;
+    virtual double GetPoint(int i) = 0;
 
     void RenderData();
 
 public:
-    CoefficientsPlotPanel(wxWindow *parent) : PlotPanel(parent) {}
+    PointsPlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags) : PlotPanel(parent, id, position, size, flags) {}
 
     void FitPlot();
-    void SetCoefficients(const std::vector<double> &coefficients)
-    {
-        this->coefficients = coefficients;
-    }
+    virtual ~PointsPlotPanel() = default;
+};
+
+class CoefficientsPlotPanel : public PointsPlotPanel {
+    size_t GetPointsCount();
+    double GetPoint(int i);
+
+public:
+    CoefficientsPlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags) : PointsPlotPanel(parent, id, position, size, flags) {}
     virtual ~CoefficientsPlotPanel() = default;
+};
+
+class ErrorsPlotPanel : public PointsPlotPanel {
+    size_t GetPointsCount();
+    double GetPoint(int i);
+
+public:
+    ErrorsPlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags) : PointsPlotPanel(parent, id, position, size, flags) {}
+    virtual ~ErrorsPlotPanel() = default;
 };
 
 class SeriesPlotPanel : public PlotPanel {
 public:
-    SeriesPlotPanel(wxWindow *parent)
-        : PlotPanel(parent)
-    {}
-
-    void SetCoefficients(const flint::Vector &coeffs);
+    SeriesPlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags) : PlotPanel(parent, id, position, size, flags) {}
     virtual ~SeriesPlotPanel() = default;
-
-private:
-    flint::Vector coeffs;
+    
+private:    
     flint::Vector bases;
     void RenderData();
 };

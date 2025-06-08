@@ -1,7 +1,11 @@
 #include "plot_panel.hpp"
+#include "flint_wrappers/vector.hpp"
+#include "shared.hpp"
 
 #include <GL/gl.h>
 #include <algorithm>
+#include <flint/arf.h>
+#include <flint/arf_types.h>
 #include <wx/colour.h>
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
@@ -18,12 +22,12 @@ static constexpr rgb24_t ODD_POINT_COLOR = {0x02, 0x17, 0xFF};
 static constexpr rgb24_t LINE_COLOR = {0x02, 0x17, 0xFF};
 
 BEGIN_EVENT_TABLE(PlotPanel, wxGLCanvas)
-EVT_MOTION(PlotPanel::MouseMoved)
-EVT_LEFT_DOWN(PlotPanel::MouseDown)
-EVT_LEFT_UP(PlotPanel::MouseReleased)
-EVT_SIZE(PlotPanel::Resized)
-EVT_MOUSEWHEEL(PlotPanel::MouseWheelMoved)
-EVT_PAINT(PlotPanel::Render)
+    EVT_MOTION(PlotPanel::MouseMoved)
+    EVT_LEFT_DOWN(PlotPanel::MouseDown)
+    EVT_LEFT_UP(PlotPanel::MouseReleased)
+    EVT_SIZE(PlotPanel::Resized)
+    EVT_MOUSEWHEEL(PlotPanel::MouseWheelMoved)
+    EVT_PAINT(PlotPanel::Render)
 END_EVENT_TABLE()
 
 void PlotPanel::MouseMoved(wxMouseEvent &event)
@@ -73,18 +77,11 @@ void PlotPanel::MouseWheelMoved(wxMouseEvent &event)
     Refresh();
 }
 
-static constexpr int WINDOW_WIDTH = 640;
-static constexpr int WINDOW_HEIGHT = 480;
-
-static const int GL_ATTRIBS[] = {
-    WX_GL_SAMPLES, 4,
-    0
-};
-
-PlotPanel::PlotPanel(wxWindow *parent)
-    : wxGLCanvas(parent, wxID_ANY, GL_ATTRIBS, wxDefaultPosition, wxSize(WINDOW_WIDTH, WINDOW_HEIGHT),
-                 wxFULL_REPAINT_ON_RESIZE),
-      context(this)
+PlotPanel::PlotPanel(wxWindow *parent, int id, wxPoint position, wxSize size, int flags)
+    : wxGLCanvas(
+        parent, id,
+        rendering_settings.gl_attribs[0] == 0 ? nullptr : rendering_settings.gl_attribs,
+        position, size, wxFULL_REPAINT_ON_RESIZE), context(this)
 {
     SetBackgroundStyle(wxBG_STYLE_CUSTOM);
 }
@@ -96,18 +93,21 @@ void PlotPanel::Resized(wxSizeEvent &evt)
 
 Vec2d PlotPanel::SpaceToScreenCoord(Vec2d vec)
 {
-    return {WINDOW_WIDTH / 2.0 + pos.x + vec.x * zoom,
-            WINDOW_HEIGHT / 2.0 + pos.y - vec.y * zoom * y_zoom};
+    wxSize size = GetSize();
+    return {size.x / 2.0 + pos.x + vec.x * zoom,
+            size.y / 2.0 + pos.y - vec.y * zoom * y_zoom};
 }
 
 Vec2d PlotPanel::ScreenToSpaceCoord(Vec2d vec)
 {
-    return {(vec.x - pos.x - WINDOW_WIDTH / 2.0) / zoom,
-            (vec.y - pos.y - WINDOW_HEIGHT / 2.0) / (-zoom * y_zoom)};
+    wxSize size = GetSize();
+    return {(vec.x - pos.x - size.x / 2.0) / zoom,
+            (vec.y - pos.y - size.y / 2.0) / (-zoom * y_zoom)};
 }
 
 void PlotPanel::RenderGrid()
 {
+    wxSize win_size = GetSize();
     Vec2d zero = SpaceToScreenCoord({0.0, 0.0});
 
     glColor3ub(0xB0, 0xB0, 0xB0);
@@ -117,26 +117,26 @@ void PlotPanel::RenderGrid()
 
     double scale = ldexpl(1, ilogb(zoom));
     double step = 32 / scale * zoom;
-    for (double x = SpaceToScreenCoord({32 / scale, 0}).x; x < WINDOW_WIDTH; x += step) {
+    for (double x = SpaceToScreenCoord({32 / scale, 0}).x; x < win_size.x; x += step) {
         glVertex2d(x, 0);
-        glVertex2d(x, WINDOW_HEIGHT);
+        glVertex2d(x, win_size.y);
     }
 
     for (double x = SpaceToScreenCoord({-32 / scale, 0}).x; x > 0.0; x -= step) {
         glVertex2d(x, 0);
-        glVertex2d(x, WINDOW_HEIGHT);
+        glVertex2d(x, win_size.y);
     }
 
     scale = ldexpl(1, ilogb(zoom * y_zoom));
     step = 32 / scale * zoom * y_zoom;
     for (double y = SpaceToScreenCoord({0, 32 / scale}).y; y > 0.0; y -= step) {
         glVertex2d(0, y);
-        glVertex2d(WINDOW_WIDTH, y);
+        glVertex2d(win_size.x, y);
     }
 
-    for (double y = SpaceToScreenCoord({0, -32 / scale}).y; y < WINDOW_HEIGHT; y += step) {
+    for (double y = SpaceToScreenCoord({0, -32 / scale}).y; y < win_size.y; y += step) {
         glVertex2d(0, y);
-        glVertex2d(WINDOW_WIDTH, y);
+        glVertex2d(win_size.x, y);
     }
 
     glEnd();
@@ -144,11 +144,12 @@ void PlotPanel::RenderGrid()
 
 void PlotPanel::RenderAxes()
 {
+    wxSize size = GetSize();
     Vec2d zero = SpaceToScreenCoord({0.0, 0.0});
 
-    double x_end = WINDOW_WIDTH - 10.0;
+    double x_end = size.x - 10.0;
     double x_begin = 10.0;
-    double y_begin = WINDOW_HEIGHT - 10.0;
+    double y_begin = size.y - 10.0;
     double y_end = 10.0;
 
     glColor3ub(0, 0, 0);
@@ -176,7 +177,7 @@ void PlotPanel::RenderAxes()
 
     double scale = ldexpl(1, ilogb(zoom));
     double step = 32 / scale * zoom;
-    for (double x = SpaceToScreenCoord({32 / scale, 0}).x; x < WINDOW_WIDTH - 30.0; x += step) {
+    for (double x = SpaceToScreenCoord({32 / scale, 0}).x; x < size.x - 30.0; x += step) {
         glVertex2d(x, zero.y - 5.0);
         glVertex2d(x, zero.y + 5.0);
     }
@@ -193,7 +194,7 @@ void PlotPanel::RenderAxes()
         glVertex2d(zero.x + 5.0, y);
     }
 
-    for (double y = SpaceToScreenCoord({0, -32 / scale}).y; y < WINDOW_HEIGHT - 30.0; y += step) {
+    for (double y = SpaceToScreenCoord({0, -32 / scale}).y; y < size.y - 30.0; y += step) {
         glVertex2d(zero.x - 5.0, y);
         glVertex2d(zero.x + 5.0, y);
     }
@@ -208,20 +209,18 @@ void PlotPanel::Render(wxPaintEvent &evt)
 
     wxPaintDC dc(this);
     wxGLCanvas::SetCurrent(context);
+    wxSize win_size = GetSize();
     
-    //glEnable(GL_MULTISAMPLE);
-    glEnable(GL_BLEND);
-    glEnable(GL_LINE_SMOOTH);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     wxColour bg_col = *wxWHITE;
     glClearColor(bg_col.Red() / 255.f, bg_col.Green() / 255.f, bg_col.Blue() / 255.f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, win_size.x, win_size.y);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 1);
+    glOrtho(0, win_size.x, win_size.y, 0, 0, 1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -233,13 +232,15 @@ void PlotPanel::Render(wxPaintEvent &evt)
     SwapBuffers();
 }
 
-void CoefficientsPlotPanel::RenderData()
+// TODO: we are doing ARF_TO_D every frame.... fix this
+void PointsPlotPanel::RenderData()
 {
     glBegin(GL_QUADS);
-    for (int i = 0; i < coefficients.size(); i++) {
+    int n = GetPointsCount();
+    for (int i = 0; i < n; i++) {
         rgb24_t color = (i % 2) ? ODD_POINT_COLOR : EVEN_POINT_COLOR;
         glColor3ub(color.r, color.g, color.b);
-        Vec2d coord = SpaceToScreenCoord({(double)i, coefficients[i]});
+        Vec2d coord = SpaceToScreenCoord({(double)i, GetPoint(i) });
 
         double size = std::max(3.0, zoom / 4.0);
         glVertex2d(coord.x - size, coord.y);
@@ -250,11 +251,13 @@ void CoefficientsPlotPanel::RenderData()
     glEnd();
 }
 
-void CoefficientsPlotPanel::FitPlot()
+void PointsPlotPanel::FitPlot()
 {
+    wxSize win_size = GetSize();
     double requested_width, requested_height;
 
-    if (coefficients.size() == 0) {
+    size_t n = GetPointsCount();
+    if (n == 0) {
         pos.x = 0;
         pos.y = 0;
 
@@ -262,21 +265,27 @@ void CoefficientsPlotPanel::FitPlot()
         requested_height = 1;
     }
     else {
-        double y_min = *std::min_element(coefficients.begin(), coefficients.end());
-        double y_max = *std::max_element(coefficients.begin(), coefficients.end());
+        double y_min = GetPoint(0);
+        double y_max = y_min;
 
-        pos.x = coefficients.size() / -2.0;
+        for (int i = 1; i < n; i++) {
+            double y = GetPoint(i);
+            y_min = std::min(y, y_min);
+            y_max = std::max(y, y_max);
+        }
+
+        pos.x = n / -2.0;
         pos.y = (y_min + y_max) / 2.0;
 
-        requested_width = coefficients.size();
+        requested_width = n;
         requested_height = (y_max - y_min);
 
         if (requested_height == 0)
             requested_height = 1;
     }
 
-    zoom = (double)WINDOW_WIDTH / requested_width / 1.5;
-    y_zoom = (double)WINDOW_HEIGHT / requested_height / 1.5 / zoom;
+    zoom = (double)win_size.x / requested_width / 1.5;
+    y_zoom = (double)win_size.y / requested_height / 1.5 / zoom;
 
     pos.x *= zoom;
     pos.y *= zoom * y_zoom;
@@ -284,28 +293,28 @@ void CoefficientsPlotPanel::FitPlot()
     Refresh();
 }
 
-void SeriesPlotPanel::SetCoefficients(const flint::Vector &coeffs)
-{
-    this->coeffs = coeffs;
-
-    bases = flint::Vector(coeffs.size());
-    for (int i = 0; i < coeffs.size(); i++) {
-        bases[i].set((double)(i + 1));
-    }
-}
-
 static constexpr int BYTE_PRECISION = 256;
 
 void SeriesPlotPanel::RenderData()
 {
+    flint::Vector &coeffs = coefficients[selected_solution];
+
+    if (bases.size() != coeffs.size()) {
+        bases = flint::Vector(coefficients[selected_solution].size());
+        for (int i = 0; i < coefficients[selected_solution].size(); i++) {
+            bases[i].set((double)(i + 1));
+        }
+    }
+
+    wxSize win_size = GetSize();
     if (coeffs.size() == 0) {
         return;
     }
 
     double scale = ldexpl(1, ilogb(zoom));
-    double x_step = 5.f / zoom;
+    double x_step = rendering_settings.line_length / zoom;
     double x_min = ScreenToSpaceCoord({0, 0}).x;
-    double x_max = ScreenToSpaceCoord({WINDOW_WIDTH, 0}).x;
+    double x_max = ScreenToSpaceCoord({(double)win_size.x, 0}).x;
 
     x_min = floor(x_min / x_step) * x_step;
     int n = ceil((x_max - x_min) / x_step);
@@ -333,4 +342,31 @@ void SeriesPlotPanel::RenderData()
         glVertex2d(pos.x, pos.y);
     }
     glEnd();
+}
+
+
+size_t CoefficientsPlotPanel::GetPointsCount()
+{
+    if (selected_solution == -1) {
+        return 0;
+    }
+    return coefficients[selected_solution].size();
+}
+
+size_t ErrorsPlotPanel::GetPointsCount()
+{
+    if (selected_solution == -1) {
+        return 0;
+    }
+    return coefficients[selected_solution].size();
+}
+
+double CoefficientsPlotPanel::GetPoint(int i)
+{
+    return arf_get_d(&coefficients[selected_solution][i].real().mid(), ARF_RND_NEAR);
+}
+
+double ErrorsPlotPanel::GetPoint(int i)
+{
+    return mag_get_d(&coefficients[selected_solution][i].real().rad());
 }
