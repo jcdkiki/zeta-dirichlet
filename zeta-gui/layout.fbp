@@ -85,7 +85,7 @@
         <property name="window_name"></property>
         <property name="window_style"></property>
       </object>
-      <object class="wxMenuBar" expanded="false">
+      <object class="wxMenuBar" expanded="true">
         <property name="bg"></property>
         <property name="context_help"></property>
         <property name="context_menu">1</property>
@@ -107,7 +107,7 @@
         <property name="window_extra_style"></property>
         <property name="window_name"></property>
         <property name="window_style"></property>
-        <object class="wxMenu" expanded="false">
+        <object class="wxMenu" expanded="true">
           <property name="label">File</property>
           <property name="name">file_menu</property>
           <property name="permission">protected</property>
@@ -129,20 +129,6 @@
             <property name="bitmap"></property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
-            <property name="help">Save coefficients to file</property>
-            <property name="id">ID_SaveCoefficients</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Save</property>
-            <property name="name">save_file</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
-            <event name="OnMenuSelection">SaveFile</event>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
             <property name="help">Load coefficients from file</property>
             <property name="id">ID_LoadCoefficients</property>
             <property name="kind">wxITEM_NORMAL</property>
@@ -152,6 +138,20 @@
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
             <event name="OnMenuSelection">LoadFile</event>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Save coefficients to file</property>
+            <property name="id">ID_SaveCoefficients</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Save</property>
+            <property name="name">save_file</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+            <event name="OnMenuSelection">SaveFile</event>
           </object>
         </object>
         <object class="wxMenu" expanded="false">

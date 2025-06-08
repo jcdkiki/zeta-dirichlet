@@ -12,8 +12,8 @@
 BEGIN_EVENT_TABLE( ZetaFrame, wxFrame )
 	EVT_CLOSE( ZetaFrame::_wxFB_OnClose )
 	EVT_MENU( ID_NewCoefficients, ZetaFrame::_wxFB_NewFile )
-	EVT_MENU( ID_SaveCoefficients, ZetaFrame::_wxFB_SaveFile )
 	EVT_MENU( ID_LoadCoefficients, ZetaFrame::_wxFB_LoadFile )
+	EVT_MENU( ID_SaveCoefficients, ZetaFrame::_wxFB_SaveFile )
 	EVT_MENU( ID_RenderingSettings, ZetaFrame::_wxFB_RenderingSettings )
 	EVT_CHOICE( ID_SolutionChoice, ZetaFrame::_wxFB_SolutionChoice )
 	EVT_BUTTON( ID_FitPlot, ZetaFrame::_wxFB_FitPlot )
@@ -30,13 +30,13 @@ ZetaFrame::ZetaFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	new_file = new wxMenuItem( file_menu, ID_NewCoefficients, wxString( _("New") ) , _("Compute new coefficients"), wxITEM_NORMAL );
 	file_menu->Append( new_file );
 
-	wxMenuItem* save_file;
-	save_file = new wxMenuItem( file_menu, ID_SaveCoefficients, wxString( _("Save") ) , _("Save coefficients to file"), wxITEM_NORMAL );
-	file_menu->Append( save_file );
-
 	wxMenuItem* load_file;
 	load_file = new wxMenuItem( file_menu, ID_LoadCoefficients, wxString( _("Load") ) , _("Load coefficients from file"), wxITEM_NORMAL );
 	file_menu->Append( load_file );
+
+	wxMenuItem* save_file;
+	save_file = new wxMenuItem( file_menu, ID_SaveCoefficients, wxString( _("Save") ) , _("Save coefficients to file"), wxITEM_NORMAL );
+	file_menu->Append( save_file );
 
 	menubar->Append( file_menu, _("File") );
 

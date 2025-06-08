@@ -46,8 +46,8 @@ class ZetaFrame : public wxFrame
 		// Private event handlers
 		void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
 		void _wxFB_NewFile( wxCommandEvent& event ){ NewFile( event ); }
-		void _wxFB_SaveFile( wxCommandEvent& event ){ SaveFile( event ); }
 		void _wxFB_LoadFile( wxCommandEvent& event ){ LoadFile( event ); }
+		void _wxFB_SaveFile( wxCommandEvent& event ){ SaveFile( event ); }
 		void _wxFB_RenderingSettings( wxCommandEvent& event ){ RenderingSettings( event ); }
 		void _wxFB_SolutionChoice( wxCommandEvent& event ){ SolutionChoice( event ); }
 		void _wxFB_FitPlot( wxCommandEvent& event ){ FitPlot( event ); }
@@ -57,8 +57,8 @@ class ZetaFrame : public wxFrame
 		enum
 		{
 			ID_NewCoefficients = 6000,
-			ID_SaveCoefficients,
 			ID_LoadCoefficients,
+			ID_SaveCoefficients,
 			ID_RenderingSettings,
 			ID_SolutionChoice,
 			ID_FitPlot,
@@ -75,8 +75,8 @@ class ZetaFrame : public wxFrame
 		// Virtual event handlers, override them in your derived class
 		void OnClose( wxCloseEvent& event );
 		void NewFile( wxCommandEvent& event );
-		void SaveFile( wxCommandEvent& event );
 		void LoadFile( wxCommandEvent& event );
+		void SaveFile( wxCommandEvent& event );
 		void RenderingSettings( wxCommandEvent& event );
 		void SolutionChoice( wxCommandEvent& event );
 		void FitPlot( wxCommandEvent& event );
