@@ -121,7 +121,7 @@ class NewFileFrame : public wxFrame
 
 		wxStaticText* label_file;
 		wxStaticText* label_method;
-		wxStaticText* label_nzeros;
+		wxStaticText* label_matsize;
 		wxStaticText* label_precision;
 		wxStaticText* label_fixed;
 		wxButton* compute_button;
@@ -134,7 +134,7 @@ class NewFileFrame : public wxFrame
 	public:
 		wxFilePickerCtrl* file_picker;
 		wxChoice* method_choice;
-		wxSpinCtrl* nzeros_ctrl;
+		wxSpinCtrl* matsize_ctrl;
 		wxSpinCtrl* precision_ctrl;
 		wxTextCtrl* coeffs_text;
 

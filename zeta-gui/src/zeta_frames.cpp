@@ -155,19 +155,19 @@ NewFileFrame::NewFileFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	method_choice->SetSelection( 0 );
 	options_sizer->Add( method_choice, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
-	label_nzeros = new wxStaticText( this, wxID_ANY, _("Number of zeros:"), wxDefaultPosition, wxDefaultSize, 0 );
-	label_nzeros->Wrap( -1 );
-	options_sizer->Add( label_nzeros, 0, wxALIGN_CENTER|wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL, 5 );
+	label_matsize = new wxStaticText( this, wxID_ANY, _("Matrix size:"), wxDefaultPosition, wxDefaultSize, 0 );
+	label_matsize->Wrap( -1 );
+	options_sizer->Add( label_matsize, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL, 5 );
 
-	nzeros_ctrl = new wxSpinCtrl( this, wxID_ANY, wxT("50"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2147483647, 50 );
-	options_sizer->Add( nzeros_ctrl, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	matsize_ctrl = new wxSpinCtrl( this, wxID_ANY, wxT("50"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2147483647, 50 );
+	options_sizer->Add( matsize_ctrl, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 
 	label_precision = new wxStaticText( this, wxID_ANY, _("Byte precision:"), wxDefaultPosition, wxDefaultSize, 0 );
 	label_precision->Wrap( -1 );
 	options_sizer->Add( label_precision, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	precision_ctrl = new wxSpinCtrl( this, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2147483647, 50 );
-	options_sizer->Add( precision_ctrl, 0, wxALL, 5 );
+	options_sizer->Add( precision_ctrl, 1, wxALL|wxEXPAND, 5 );
 
 
 	main_sizer->Add( options_sizer, 0, wxALL|wxEXPAND, 5 );

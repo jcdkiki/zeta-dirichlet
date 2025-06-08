@@ -17,7 +17,7 @@ void ComputeAsync()
     frames.main->Enable(false);
     frames.rendering_settings->Enable(false);
 
-    int n_zeros = frames.new_file->nzeros_ctrl->GetValue();
+    int matsize = frames.new_file->matsize_ctrl->GetValue();
     int byte_precision = frames.new_file->precision_ctrl->GetValue();
 
     try {
@@ -45,13 +45,16 @@ void ComputeAsync()
             fixed_coeficients.push_back(coefficient(idx, real, imag));
         }
 
+        slong n_zeros = matsize / 2 + 1;
         flint::Vector zeros(2 * n_zeros);
         read_zeros(zeros, frames.new_file->file_picker->GetPath().c_str(), n_zeros, byte_precision);
 
-        NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
-        solver.slow_solve_all();
+        NestedSystemsSolver solver(matsize, fixed_coeficients, zeros, byte_precision);
+        if (frames.new_file->method_choice->GetStringSelection() == "Slow")
+            solver.slow_solve_all();
+        else
+            solver.optimized_lu_solve_all();
 
-        // TODO: access this thing
         frames.main->solution_choice->Clear();
         frames.main->solution_choice->Append("None");
         coefficients.clear();
