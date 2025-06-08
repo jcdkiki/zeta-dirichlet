@@ -74,7 +74,7 @@ ZetaFrame::ZetaFrame()
 void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
 {
     try {
-        int n_zeros = n_zeros_ctrl->GetValue();
+        int mat_size = n_zeros_ctrl->GetValue();
         int byte_precision = byte_precision_ctrl->GetValue();
 
         std::vector<coefficient> fixed_coeficients;
@@ -101,11 +101,18 @@ void ZetaFrame::OnLoadFile(wxFileDirPickerEvent &event)
             fixed_coeficients.push_back(coefficient(idx, real, imag));
         }
 
+        slong n_zeros = mat_size / 2 + 1;
         flint::Vector zeros(2 * n_zeros);
         read_zeros(zeros, event.GetPath().c_str(), n_zeros, byte_precision);
 
-        NestedSystemsSolver solver(fixed_coeficients, zeros, byte_precision);
-        solver.slow_solve_all();
+        flint::Vector temp_zeros(mat_size);
+        for (slong i = 0; i < mat_size; ++i)
+        {
+            acb_set(temp_zeros[i].get(), zeros[i].get());
+        }
+
+        NestedSystemsSolver solver(mat_size, fixed_coeficients, temp_zeros, byte_precision);
+        solver.optimized_lu_solve_all();
 
         coeffs_choice->Clear();
         coeffs_choice->Append("None");
