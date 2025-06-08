@@ -25,7 +25,7 @@ class NestedSystemsSolver {
     // lu funcs
     void compute_lu_decomposition(flint::Matrix &L, flint::Vector &diagonal);
 
-    void foraward_substitution(flint::Matrix &L, flint::Vector &diagonal);
+    flint::Vector lu_solve_system(slong size, const flint::Matrix& L, const flint::Vector& diagonal);
 
     // qr funcs
     void modified_gram_schmidt(flint::Matrix &Q, flint::Matrix &R, const flint::Matrix &A);
